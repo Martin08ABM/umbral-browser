@@ -17,6 +17,10 @@ const { nsKeyShortcutModifiers } = ChromeUtils.importESModule(
 
 var gZenMarketplaceManager = {
   async init() {
+    if (Services.prefs.getBoolPref("zen.themes.disable-all", true)) {
+      return;
+    }
+
     const checkForUpdates = document.getElementById("zenThemeMarketplaceCheckForUpdates");
     const header = document.getElementById("zenMarketplaceHeader");
 

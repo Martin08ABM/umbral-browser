@@ -1,0 +1,14 @@
+diff --git a/browser/app/distribution/moz.build b/browser/app/distribution/moz.build
+index b174449a09895020bfda84645b85deebe42c7be8..4a0035a8e3064743c03246536e43e9f1866eb667 100644
+--- a/browser/app/distribution/moz.build
++++ b/browser/app/distribution/moz.build
+@@ -8,3 +8,9 @@ if CONFIG["BUILT_BY_MOZILLA"]:
+     FINAL_TARGET_FILES.distribution += [
+         "distribution.ini",
+     ]
++
++# Umbral bundles the original, AMO-signed uBlock Origin XPI. Distribution
++# add-ons are installed only when the profile does not already contain the ID.
++FINAL_TARGET_FILES.distribution.extensions += [
++    "extensions/uBlock0@raymondhill.net.xpi",
++]

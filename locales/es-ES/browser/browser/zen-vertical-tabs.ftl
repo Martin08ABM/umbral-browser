@@ -45,3 +45,24 @@ zen-tab-sublabel =
         [zen-default-pinned-cmd] Separar de la pestaña fijada
        *[other] { $tabSubtitle }
     }
+zen-sidebar-containers-none =
+    .label = Sin contenedor
+    .tooltiptext = Sin contenedor
+    .aria-label = Sin contenedor
+zen-sidebar-containers-current =
+    .label = { $name }
+    .tooltiptext = { $name }
+    .aria-label = { $name }
+
+umbral-toolbar-context-autohide-urlbar =
+    .label = Ocultar la barra de direcciones automáticamente
+    .accesskey = O
+
+umbral-sidebar-home =
+    .label = Inicio
+    .tooltiptext = Inicio
+    .aria-label = Inicio
+
+umbral-focus-bookmarks-key =
+    .key = B
+    .modifiers = alt,shift

@@ -1,0 +1,12 @@
+diff --git a/toolkit/components/extensions/ExtensionActions.sys.mjs b/toolkit/components/extensions/ExtensionActions.sys.mjs
+index 38c81ce000000000000000000000000000000000..38c81ce000000000000000000000000000000001 100644
+--- a/toolkit/components/extensions/ExtensionActions.sys.mjs
++++ b/toolkit/components/extensions/ExtensionActions.sys.mjs
+@@ -548,6 +548,6 @@ export class BrowserActionBase extends PanelActionBase {
+       Services.policies?.getExtensionSettings(extension.id)?.default_area ||
+       options.default_area ||
+-      "menupanel";
++      "navbar";
+ 
+     // When the personal toolbar (bookmarks) is never visible OR vertical tabs
+     // are enabled, we want to place the extension action (widget) in the panel

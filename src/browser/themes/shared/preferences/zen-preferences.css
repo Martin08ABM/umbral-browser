@@ -283,6 +283,11 @@ groupbox h2 {
 
 /* THemes marketplace */
 
+#category-zen-marketplace,
+#zenMarketplaceGroup {
+  display: none !important;
+}
+
 #category-zen-marketplace > .category-icon {
   list-style-image: url("chrome://mozapps/skin/extensions/category-themes.svg");
 }

@@ -53,3 +53,26 @@ zen-tab-sublabel =
         [zen-default-pinned-cmd] Separate from pinned tab
         *[other] { $tabSubtitle }
     }
+
+zen-sidebar-containers-none =
+    .label = No container
+    .tooltiptext = No container
+    .aria-label = No container
+
+zen-sidebar-containers-current =
+    .label = { $name }
+    .tooltiptext = { $name }
+    .aria-label = { $name }
+
+umbral-toolbar-context-autohide-urlbar =
+    .label = Hide the address bar automatically
+    .accesskey = H
+
+umbral-sidebar-home =
+    .label = Home
+    .tooltiptext = Home
+    .aria-label = Home
+
+umbral-focus-bookmarks-key =
+    .key = B
+    .modifiers = alt,shift

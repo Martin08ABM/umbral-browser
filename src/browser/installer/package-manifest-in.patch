@@ -1,8 +1,8 @@
 diff --git a/browser/installer/package-manifest.in b/browser/installer/package-manifest.in
-index 83e52b260c380b8a4fdcb9146c36a048adffba68..f55844c294bc0a0e648fd6fc09f63218c9b71de2 100644
+index ae503c243ce915091d893d68b17af4e2263bbaf9..445f1105690fcfd7d6c2a84326118d4ad0c301f4 100644
 --- a/browser/installer/package-manifest.in
 +++ b/browser/installer/package-manifest.in
-@@ -390,9 +390,9 @@ bin/libfreebl_64int_3.so
+@@ -395,9 +395,9 @@ bin/libfreebl_64int_3.so
  ;
  #ifdef MOZ_CRASHREPORTER
  #ifdef XP_MACOSX
@@ -14,3 +14,8 @@ index 83e52b260c380b8a4fdcb9146c36a048adffba68..f55844c294bc0a0e648fd6fc09f63218
  #if defined(XP_WIN)
  @BINPATH@/@DLL_PREFIX@mozwer@DLL_SUFFIX@
  #endif
+@@ -467,3 +467,4 @@ bin/libfreebl_64int_3.so
+ #if defined(BUILT_BY_MOZILLA)
+ @RESPATH@/distribution/*
+ #endif
++@RESPATH@/distribution/extensions/uBlock0@raymondhill.net.xpi

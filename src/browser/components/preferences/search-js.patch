@@ -1,0 +1,258 @@
+diff --git a/browser/components/preferences/search.js b/browser/components/preferences/search.js
+index 019761b776..ae2cb09142 100644
+--- a/browser/components/preferences/search.js
++++ b/browser/components/preferences/search.js
+@@ -54,6 +54,8 @@ var gSearchPane = {
+     this._engineStore = new EngineStore();
+     gEngineView = new EngineView(this._engineStore);
+ 
++    UmbralSearxng.init();
++
+     this._engineStore.init().catch(console.error);
+ 
+     if (
+@@ -157,6 +159,244 @@ var gSearchPane = {
+   },
+ };
+ 
++/**
++ * User-initiated SearXNG installation. The only network request here is made
++ * after the user presses Add / update; the search provider itself never gets
++ * suggestions or text typed before submission.
++ */
++const UmbralSearxng = {
++  ID_PREF: "umbral.search.searxng.engineId",
++  URL_PREF: "umbral.search.searxng.openSearchUrl",
++  pendingHTTPURL: "",
++  pendingRemove: false,
++  initialized: false,
++
++  init() {
++    if (this.initialized) {
++      return;
++    }
++    this.input = document.getElementById("umbralSearxngUrl");
++    this.addButton = document.getElementById("umbralSearxngAdd");
++    this.removeButton = document.getElementById("umbralSearxngRemove");
++    this.status = document.getElementById("umbralSearxngStatus");
++    if (!this.input || !this.addButton || !this.removeButton || !this.status) {
++      return;
++    }
++    this.initialized = true;
++
++    this.input.value = Services.prefs.getStringPref(this.URL_PREF, "");
++    this.input.addEventListener("input", () => {
++      this.pendingHTTPURL = "";
++      this.pendingRemove = false;
++    });
++    this.updateControls();
++    this.addButton.addEventListener("click", () => this.addOrUpdate());
++    this.removeButton.addEventListener("click", () => this.remove());
++  },
++
++  get searchService() {
++    return lazy.SearchService;
++  },
++
++  setStatus(messageId, args = undefined) {
++    document.l10n.setAttributes(this.status, messageId, args);
++  },
++
++  updateControls() {
++    const id = Services.prefs.getStringPref(this.ID_PREF, "");
++    this.removeButton.disabled = !id;
++    this.addButton.disabled = false;
++  },
++
++  validateInput(value) {
++    let url;
++    try {
++      url = new URL(value.trim());
++    } catch {
++      throw new Error("invalid-url");
++    }
++    if (
++      !["https:", "http:"].includes(url.protocol) ||
++      !url.hostname ||
++      url.username ||
++      url.password ||
++      url.search ||
++      url.hash
++    ) {
++      throw new Error("invalid-url");
++    }
++    const localHost =
++      url.hostname === "localhost" ||
++      url.hostname.endsWith(".localhost") ||
++      url.hostname === "127.0.0.1" ||
++      url.hostname === "[::1]";
++    return { url, localHost };
++  },
++
++  descriptorURL(url) {
++    if (/\/opensearch\.xml$/i.test(url.pathname)) {
++      url.searchParams.set("autocomplete", "");
++      return url.href;
++    }
++    const endpoint = new URL(url.href);
++    endpoint.pathname = `${endpoint.pathname.replace(/\/$/, "")}/opensearch.xml`;
++    endpoint.searchParams.set("autocomplete", "");
++    return endpoint.href;
++  },
++
++  async addOrUpdate() {
++    let parsed;
++    let location;
++    try {
++      parsed = this.validateInput(this.input.value);
++      if (parsed.url.protocol === "http:") {
++        if (this.pendingHTTPURL !== parsed.url.href) {
++          this.pendingHTTPURL = parsed.url.href;
++          this.setStatus(
++            parsed.localHost
++              ? "zen-searxng-http-local-confirm"
++              : "zen-searxng-http-confirm"
++          );
++          return;
++        }
++      }
++      this.pendingHTTPURL = "";
++      location = this.descriptorURL(parsed.url);
++      this.setStatus("zen-searxng-checking");
++      await this.replaceEngine(location);
++      this.setStatus("zen-searxng-added");
++    } catch (error) {
++      console.error("Umbral SearXNG setup failed", error);
++      this.setStatus(
++        error.message === "invalid-url"
++          ? "zen-searxng-invalid-url"
++          : "zen-searxng-error"
++      );
++    }
++    this.updateControls();
++  },
++
++  async replaceEngine(location) {
++    const service = this.searchService;
++    await service.init();
++    const oldId = Services.prefs.getStringPref(this.ID_PREF, "");
++    const oldEngine = oldId ? service.getEngineById(oldId) : null;
++    const oldURL = Services.prefs.getStringPref(this.URL_PREF, "");
++    const oldIsDefault = oldEngine === service.defaultEngine;
++    const oldIsPrivateDefault =
++      oldEngine && oldEngine === service.defaultPrivateEngine;
++    let engine;
++    let oldRemoved = false;
++    try {
++      if (oldEngine) {
++        await service.removeEngine(oldEngine, service.CHANGE_REASON.USER);
++        oldRemoved = true;
++      }
++      engine = await service.addOpenSearchEngine(location, null, null);
++      const searchURL = engine.getURLOfType("text/html");
++      let targetURL;
++      try {
++        targetURL = searchURL?.template
++          ? new URL(
++              searchURL.template.replaceAll("{searchTerms}", "test"),
++              location
++            )
++          : null;
++      } catch {
++        targetURL = null;
++      }
++      if (!targetURL || targetURL.origin !== new URL(location).origin) {
++        throw new Error("incompatible-descriptor");
++      }
++      if (engine.getURLOfType("application/x-suggestions+json")) {
++        throw new Error("suggestions-present");
++      }
++      if (oldIsDefault) {
++        await service.setDefault(engine, service.CHANGE_REASON.USER);
++      }
++      if (oldIsPrivateDefault) {
++        await service.setDefaultPrivate(engine, service.CHANGE_REASON.USER);
++      }
++      Services.prefs.setStringPref(this.ID_PREF, engine.id);
++      Services.prefs.setStringPref(this.URL_PREF, location);
++      this.input.value = location.replace(/\/opensearch\.xml\?.*$/, "");
++    } catch (error) {
++      if (engine) {
++        try {
++          await service.removeEngine(engine, service.CHANGE_REASON.USER);
++        } catch (removeError) {
++          console.error("Could not remove rejected SearXNG engine", removeError);
++        }
++      }
++      if (oldRemoved && oldURL) {
++        try {
++          const restored = await service.addOpenSearchEngine(oldURL, null, null);
++          if (oldIsDefault) {
++            await service.setDefault(restored, service.CHANGE_REASON.USER);
++          }
++          if (oldIsPrivateDefault) {
++            await service.setDefaultPrivate(restored, service.CHANGE_REASON.USER);
++          }
++          Services.prefs.setStringPref(this.ID_PREF, restored.id);
++        } catch (restoreError) {
++          console.error("Could not restore previous SearXNG engine", restoreError);
++        }
++      }
++      throw error;
++    }
++  },
++
++  async remove() {
++    const service = this.searchService;
++    await service.init();
++    const id = Services.prefs.getStringPref(this.ID_PREF, "");
++    const engine = id ? service.getEngineById(id) : null;
++    if (!engine) {
++      Services.prefs.clearUserPref(this.ID_PREF);
++      Services.prefs.clearUserPref(this.URL_PREF);
++      this.updateControls();
++      return;
++    }
++    const isDefault = engine === service.defaultEngine;
++    const isPrivateDefault = engine === service.defaultPrivateEngine;
++    const fallback = service.getEngineById("ddg");
++    if ((isDefault || isPrivateDefault) && !fallback) {
++      this.setStatus("zen-searxng-no-fallback");
++      return;
++    }
++    if (!this.pendingRemove) {
++      this.pendingRemove = true;
++      this.setStatus(
++        isDefault || isPrivateDefault
++          ? "zen-searxng-remove-active"
++          : "zen-searxng-remove-confirm"
++      );
++      return;
++    }
++    this.pendingRemove = false;
++    await service.removeEngine(engine, service.CHANGE_REASON.USER);
++    if (isDefault) {
++      await service.setDefault(fallback, service.CHANGE_REASON.USER);
++    }
++    if (isPrivateDefault) {
++      await service.setDefaultPrivate(fallback, service.CHANGE_REASON.USER);
++    }
++    Services.prefs.clearUserPref(this.ID_PREF);
++    Services.prefs.clearUserPref(this.URL_PREF);
++    this.input.value = "";
++    this.setStatus("zen-searxng-removed");
++    this.updateControls();
++  },
++};
++
++if (document.readyState === "loading") {
++  document.addEventListener("DOMContentLoaded", () => UmbralSearxng.init(), {
++    once: true,
++  });
++} else {
++  UmbralSearxng.init();
++}
++
+ /**
+  * Keeps track of the search engine objects and notifies the views for updates.
+  */

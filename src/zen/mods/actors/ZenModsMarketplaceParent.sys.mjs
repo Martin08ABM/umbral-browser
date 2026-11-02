@@ -11,7 +11,19 @@ export class ZenModsMarketplaceParent extends JSWindowActorParent {
     return this.browsingContext.topChromeWindow.gZenMods;
   }
 
+  #modsDisabled() {
+    return Services.prefs.getBoolPref("zen.themes.disable-all", true);
+  }
+
   async receiveMessage(message) {
+    if (
+      this.#modsDisabled() &&
+      message.name !== "ZenModsMarketplace:IsModInstalled"
+    ) {
+      return message.name === "ZenModsMarketplace:CheckForUpdates"
+        ? undefined
+        : false;
+    }
     switch (message.name) {
       case "ZenModsMarketplace:InstallMod": {
         const modId = message.data.modId;

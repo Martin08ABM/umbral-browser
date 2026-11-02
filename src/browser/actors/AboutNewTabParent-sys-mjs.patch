@@ -1,0 +1,93 @@
+diff --git a/browser/actors/AboutNewTabParent.sys.mjs b/browser/actors/AboutNewTabParent.sys.mjs
+index 1b0427ef74..acda4497bc 100644
+--- a/browser/actors/AboutNewTabParent.sys.mjs
++++ b/browser/actors/AboutNewTabParent.sys.mjs
+@@ -5,6 +5,9 @@
+ const lazy = {};
+ 
+ ChromeUtils.defineESModuleGetters(lazy, {
++  AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
++  PrivacyMetricsService:
++    "moz-src:///browser/components/protections/PrivacyMetricsService.sys.mjs",
+   AboutNewTab: "resource:///modules/AboutNewTab.sys.mjs",
+   ASRouter: "resource:///modules/asrouter/ASRouter.sys.mjs",
+ });
+@@ -109,6 +112,78 @@ export class AboutNewTabParent extends JSWindowActorParent {
+         break;
+       }
+ 
++      case "UmbralHome:GetUboStatus": {
++        const tabDetails = this.getTabDetails();
++        if (
++          !tabDetails ||
++          !["about:home", "about:newtab"].includes(tabDetails.url)
++        ) {
++          return null;
++        }
++        let status = "unavailable";
++        try {
++          const addon = await lazy.AddonManager.getAddonByID(
++            "uBlock0@raymondhill.net"
++          );
++          if (addon) {
++            status = addon.isActive ? "active" : "disabled";
++          }
++        } catch (error) {
++          console.error("Umbral homepage could not read uBO state", error);
++        }
++        let label;
++        try {
++          const registry = L10nRegistry.getInstance();
++          if (!registry.hasSource("umbral-home")) {
++            registry.registerSources([
++              new L10nFileSource(
++                "umbral-home",
++                "app",
++                ["en-US", "es-ES"],
++                "resource://newtab/prerendered/l10n/{locale}/"
++              ),
++            ]);
++          }
++          lazy.UmbralHomeLocalization ??= new Localization(
++            ["browser/umbralHome.ftl"],
++            true
++          );
++          label = await lazy.UmbralHomeLocalization.formatValue(
++            `umbral-home-ublock-${status}`
++          );
++        } catch (error) {
++          console.error("Umbral homepage could not localize uBO state", error);
++        }
++        if (typeof label !== "string") {
++          status = "unavailable";
++          label = "Unavailable";
++        }
++        let stats = null;
++        try {
++          stats = await lazy.PrivacyMetricsService.getHomepageStats();
++        } catch (error) {
++          console.error("Umbral homepage could not read ETP metrics", error);
++        }
++        if (
++          !this.browsingContext.isDiscarded &&
++          this.getTabDetails()?.url === tabDetails.url
++        ) {
++          this.sendAsyncMessage("UmbralHome:PrivacyData", {
++            status,
++            label: label.slice(0, 64),
++            trackers:
++              Number.isSafeInteger(stats?.trackers) && stats.trackers >= 0
++                ? stats.trackers
++                : null,
++            cookies:
++              Number.isSafeInteger(stats?.cookies) && stats.cookies >= 0
++                ? stats.cookies
++                : null,
++          });
++        }
++        break;
++      }
++
+       case "Load": {
+         this.notifyActivityStreamChannel("onNewTabLoad", message);
+         this.makeTransientIfDisabledAndInitial();

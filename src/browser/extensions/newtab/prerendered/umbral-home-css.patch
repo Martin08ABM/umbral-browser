@@ -1,0 +1,168 @@
+diff --git a/browser/extensions/newtab/prerendered/umbral-home.css b/browser/extensions/newtab/prerendered/umbral-home.css
+new file mode 100644
+index 0000000000..54ac89d7a7
+--- /dev/null
++++ b/browser/extensions/newtab/prerendered/umbral-home.css
+@@ -0,0 +1,162 @@
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++:root {
++  color-scheme: light dark;
++  --umbral-page: light-dark(#f6f3ec, #121212);
++  --umbral-ink: light-dark(#241f1a, #f4efe6);
++  --umbral-muted: light-dark(#6a6258, #b7b0a4);
++  --umbral-card: light-dark(rgb(28 24 18 / 4%), rgb(255 255 255 / 5%));
++  --umbral-line: light-dark(rgb(28 24 18 / 14%), rgb(255 255 255 / 14%));
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body {
++  height: 100%;
++  margin: 0;
++}
++
++body {
++  min-height: 100%;
++  display: flex;
++  flex-direction: column;
++  background: var(--umbral-page);
++  color: var(--umbral-ink);
++  font: 13px/1.4 system-ui, sans-serif;
++}
++
++main {
++  flex: 1;
++  display: grid;
++  place-items: center;
++  padding: 48px 24px 24px;
++}
++
++.logo {
++  width: 180px;
++  height: auto;
++}
++
++.logo-light {
++  display: none;
++}
++
++@media (prefers-color-scheme: light) {
++  .logo-dark {
++    display: none;
++  }
++
++  .logo-light {
++    display: block;
++  }
++}
++
++.cards {
++  display: flex;
++  justify-content: center;
++  align-items: stretch;
++  gap: 12px;
++  margin: 0;
++  padding: 0 24px 28px;
++}
++
++.card {
++  position: relative;
++  width: 148px;
++  margin: 0;
++  padding: 10px 12px;
++  border: 1px solid var(--umbral-line);
++  border-radius: 10px;
++  background: var(--umbral-card);
++}
++
++.card-heading {
++  position: relative;
++  display: flex;
++  align-items: flex-start;
++  justify-content: space-between;
++  gap: 4px;
++}
++
++.card h2 {
++  margin: 0;
++  font-size: 11px;
++  font-weight: 560;
++  letter-spacing: 0.01em;
++  color: var(--umbral-muted);
++}
++
++.tooltip-trigger {
++  flex: none;
++  display: grid;
++  place-items: center;
++  width: 18px;
++  height: 18px;
++  padding: 0;
++  border: 1px solid var(--umbral-muted);
++  border-radius: 50%;
++  background: transparent;
++  color: var(--umbral-ink);
++  font: inherit;
++  font-size: 11px;
++  cursor: help;
++}
++
++.tooltip-trigger:focus-visible {
++  outline: 2px solid currentColor;
++  outline-offset: 2px;
++}
++
++.card-tooltip {
++  position: absolute;
++  z-index: 2;
++  top: calc(100% + 6px);
++  right: 0;
++  width: 210px;
++  padding: 8px 10px;
++  border: 1px solid var(--umbral-line);
++  border-radius: 8px;
++  background: var(--umbral-page);
++  color: var(--umbral-ink);
++  font-size: 12px;
++  font-weight: 400;
++  box-shadow: 0 4px 14px rgb(0 0 0 / 16%);
++  visibility: hidden;
++  opacity: 0;
++  transition: opacity 120ms ease;
++  pointer-events: none;
++}
++
++.tooltip-trigger:hover + .card-tooltip,
++.tooltip-trigger:focus-visible + .card-tooltip {
++  visibility: visible;
++  opacity: 1;
++}
++
++.card p.period {
++  margin: 4px 0 0;
++  color: var(--umbral-muted);
++  font-size: 10px;
++}
++
++.card p.metric {
++  margin: 3px 0 0;
++}
++
++.card p {
++  margin: 6px 0 0;
++  font-size: 13px;
++  font-weight: 600;
++}
++
++@media (max-width: 560px) {
++  .cards {
++    flex-direction: column;
++    align-items: center;
++  }
++}

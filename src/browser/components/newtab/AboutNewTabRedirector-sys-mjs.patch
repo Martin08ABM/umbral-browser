@@ -1,0 +1,51 @@
+--- a/browser/components/newtab/AboutNewTabRedirector.sys.mjs
++++ b/browser/components/newtab/AboutNewTabRedirector.sys.mjs
+@@ -421,25 +421,15 @@
+   /**
+    * @returns {string} the default URL
+    *
+-   * This URL depends on various activity stream prefs. Overriding
+-   * the newtab page has no effect on the result of this function.
++   * about:home and about:newtab load this document. An extension or the user
++   * replacing the new-tab page does not come through here.
+    */
+   get defaultURL() {
+-    if (this.remoteRendererEnabled) {
+-      return "resource://newtab/data/content/remote-renderer-host.html";
+-    }
+-
+-    // Generate the desired activity stream resource depending on state, e.g.,
+-    // "resource://newtab/prerendered/activity-stream.html"
+-    // "resource://newtab/prerendered/activity-stream-debug.html"
+-    // "resource://newtab/prerendered/activity-stream-noscripts.html"
+-    return [
+-      "resource://newtab/prerendered/",
+-      "activity-stream",
+-      this.activityStreamDebug && this.selfLoadingEnabled ? "-debug" : "",
+-      this.selfLoadingEnabled ? "" : "-noscripts",
+-      ".html",
+-    ].join("");
++    // Loaded through about:home and about:newtab, which stay untrusted.
++    // A chrome document here is system-privileged and the content process
++    // also refuses to read it. This resource is the newtab page the
++    // content process is already allowed to read, and it has no script.
++    return "resource://newtab/prerendered/umbral-home.html";
+   }
+ 
+   newChannel() {
+@@ -596,13 +586,8 @@
+     let pageURI;
+ 
+     if (uri.spec.startsWith("about:home")) {
+-      let cacheChannel = AboutHomeStartupCacheChild.maybeGetCachedPageChannel(
+-        uri,
+-        loadInfo
+-      );
+-      if (cacheChannel) {
+-        return cacheChannel;
+-      }
++      // The startup cache can still hold the previous activity-stream page.
++      AboutHomeStartupCacheChild.disqualifyCache();
+       pageURI = Services.io.newURI(this.defaultURL);
+     } else {
+       // The only other possibility is about:newtab.

@@ -20,6 +20,17 @@ zen-welcome-dont-set-default-browser = <strong>NO</strong>, still exploring my o
 
 zen-welcome-default-search-title = Pick your search engine.
 zen-welcome-default-search-description = Choose your default search engine. You can always change it later!
+zen-welcome-searxng-description = Add an instance you trust. Umbral checks it only after you choose Add. Typing sends no requests, and the new engine will not become your default until you select it.
+zen-welcome-searxng-url-label = SearXNG instance URL
+zen-welcome-searxng-add = Add SearXNG instance
+zen-welcome-searxng-checking = Checking the instance…
+zen-welcome-searxng-added = Instance added. Select it above to make it your default.
+zen-welcome-searxng-invalid-url = Enter a valid HTTP or HTTPS instance URL without credentials, query parameters, or a fragment.
+zen-welcome-searxng-http-confirm = This instance uses HTTP, so searches and results are not encrypted in transit. If you trust this network and server, press Add SearXNG instance again to continue.
+zen-welcome-searxng-http-local-confirm = This local instance uses HTTP. Traffic stays unencrypted on the local network. Press Add SearXNG instance again to continue.
+zen-welcome-searxng-error = The instance could not be added. Check its URL and OpenSearch support, then try again.
+zen-welcome-searxng-suggestions-error = This OpenSearch descriptor offers remote suggestions, which Umbral does not enable.
+zen-welcome-searxng-edit-in-settings = An instance is already configured. Edit it in Search settings to avoid duplicates.
 
 zen-welcome-essentials-title = Choose the apps you use most.
 zen-welcome-essentials-description = Select your favorite apps to keep them handy in your sidebar.

@@ -1,0 +1,15 @@
+diff --git a/browser/extensions/newtab/addon-jar.mn b/browser/extensions/newtab/addon-jar.mn
+index 0410678376ca1babfa9db91ca4860020fd5c9c51..ae0512d3366828db386138b793eab736d2e3deb2 100644
+--- a/browser/extensions/newtab/addon-jar.mn
++++ b/browser/extensions/newtab/addon-jar.mn
+@@ -30,6 +30,10 @@ browser.jar:
+   builtin-addons/newtab/prerendered/activity-stream-debug.html (./prerendered/activity-stream-debug.html)
+ #endif
+   builtin-addons/newtab/prerendered/activity-stream-noscripts.html (./prerendered/activity-stream-noscripts.html)
++  builtin-addons/newtab/prerendered/umbral-home.html (./prerendered/umbral-home.html)
++  builtin-addons/newtab/prerendered/umbral-home.css (./prerendered/umbral-home.css)
++  builtin-addons/newtab/prerendered/l10n/en-US/browser/umbralHome.ftl (./prerendered/l10n/en-US/browser/umbralHome.ftl)
++  builtin-addons/newtab/prerendered/l10n/es-ES/browser/umbralHome.ftl (./prerendered/l10n/es-ES/browser/umbralHome.ftl)
+ 
+ # The following are resources that exist in other component folders that are
+ # included in the newtab resources at build time. Specifically, these are for

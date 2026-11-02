@@ -1,0 +1,169 @@
+diff --git a/browser/components/protections/PrivacyMetricsService.sys.mjs b/browser/components/protections/PrivacyMetricsService.sys.mjs
+index 555dfce306..7830f540c0 100644
+--- a/browser/components/protections/PrivacyMetricsService.sys.mjs
++++ b/browser/components/protections/PrivacyMetricsService.sys.mjs
+@@ -44,19 +44,39 @@ export const PrivacyMetricsService = {
+    * @returns {Promise<PrivacyMetricsStats>}
+    */
+   async getWeeklyStats() {
+-    /** @type {number} */
+-    const todayInMs = Date.now();
+-    /** @type {number} */
+-    const weekAgoInMs = todayInMs - 7 * 24 * 60 * 60 * 1000;
++    const today = new Date();
++    const todayInMs = Date.UTC(
++      today.getUTCFullYear(),
++      today.getUTCMonth(),
++      today.getUTCDate()
++    );
++    const weekStartInMs = todayInMs - 6 * 24 * 60 * 60 * 1000;
+ 
+     const eventRows = await lazy.TrackingDBService.getEventsByDateRange(
+-      weekAgoInMs,
++      weekStartInMs,
+       todayInMs
+     );
+ 
+     return this._aggregateStats(eventRows);
+   },
+ 
++  async getHomepageStats() {
++    if (
++      !Services.prefs.getBoolPref(
++        "browser.contentblocking.database.enabled",
++        false
++      )
++    ) {
++      return null;
++    }
++
++    const stats = await this.getWeeklyStats();
++    return {
++      trackers: stats.trackers,
++      cookies: stats.cookies,
++    };
++  },
++
+   /**
+    * Get today's tracking protection statistics.
+    *
+diff --git a/browser/components/protections/test/xpcshell/test_PrivacyMetricsService.js b/browser/components/protections/test/xpcshell/test_PrivacyMetricsService.js
+index 7469fe0125..71ce23eb2e 100644
+--- a/browser/components/protections/test/xpcshell/test_PrivacyMetricsService.js
++++ b/browser/components/protections/test/xpcshell/test_PrivacyMetricsService.js
+@@ -61,6 +61,36 @@ add_task(async function test_getWeeklyStats_empty() {
+   Assert.greater(stats.lastUpdated, 0, "Should have a timestamp");
+ });
+ 
++add_task(async function test_getHomepageStats_empty_is_valid_zero() {
++  const stats = await PrivacyMetricsService.getHomepageStats();
++
++  Assert.deepEqual(stats, { trackers: 0, cookies: 0 });
++});
++
++add_task(async function test_getHomepageStats_disabled_source_is_unavailable() {
++  Services.prefs.setBoolPref("browser.contentblocking.database.enabled", false);
++  try {
++    Assert.equal(await PrivacyMetricsService.getHomepageStats(), null);
++  } finally {
++    Services.prefs.setBoolPref("browser.contentblocking.database.enabled", true);
++  }
++});
++
++add_task(async function test_getHomepageStats_propagates_query_failure() {
++  const getWeeklyStats = PrivacyMetricsService.getWeeklyStats;
++  PrivacyMetricsService.getWeeklyStats = async () => {
++    throw new Error("controlled database failure");
++  };
++  try {
++    await Assert.rejects(
++      PrivacyMetricsService.getHomepageStats(),
++      /controlled database failure/
++    );
++  } finally {
++    PrivacyMetricsService.getWeeklyStats = getWeeklyStats;
++  }
++});
++
+ add_task(async function test_getWeeklyStats_aggregation() {
+   info("Test that getWeeklyStats correctly aggregates by category");
+ 
+@@ -223,26 +253,35 @@ add_task(async function test_getTodayStats_excludes_other_days() {
+   await TrackingDBService.clearAll();
+ });
+ 
+-add_task(async function test_exactly_7_days_boundary() {
+-  info("Test 7-day boundary precisely - 6 days ago included, 8 days excluded");
++add_task(async function test_exactly_7_utc_dates_boundary() {
++  info("Test that the range includes today and the previous six UTC dates");
+ 
+   const db = await Sqlite.openConnection({ path: DB_PATH });
+-  const now = Date.now();
+-  // 6 days ago (should be included - within 7-day window)
+-  const sixDaysAgo = new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString();
+-  // 8 days ago (should be excluded - outside 7-day window)
+-  const eightDaysAgo = new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString();
++  const today = new Date();
++  const todayUTC = Date.UTC(
++    today.getUTCFullYear(),
++    today.getUTCMonth(),
++    today.getUTCDate()
++  );
++  const firstIncluded = new Date(todayUTC - 6 * 24 * 60 * 60 * 1000);
++  const firstExcluded = new Date(todayUTC - 7 * 24 * 60 * 60 * 1000);
+ 
+   await db.execute(SQL.insertCustomTimeEvent, {
+     type: TrackingDBService.TRACKERS_ID,
+     count: 25,
+-    timestamp: sixDaysAgo,
++    timestamp: firstIncluded.toISOString(),
+   });
+ 
+   await db.execute(SQL.insertCustomTimeEvent, {
+     type: TrackingDBService.TRACKERS_ID,
+     count: 75,
+-    timestamp: eightDaysAgo,
++    timestamp: firstExcluded.toISOString(),
++  });
++
++  await db.execute(SQL.insertCustomTimeEvent, {
++    type: TrackingDBService.TRACKING_COOKIES_ID,
++    count: 4,
++    timestamp: today.toISOString(),
+   });
+ 
+   await db.close();
+@@ -252,8 +291,32 @@ add_task(async function test_exactly_7_days_boundary() {
+   Assert.equal(
+     stats.trackers,
+     25,
+-    "Should include 6-day-old data but exclude 8-day-old data"
++    "Includes the first UTC date and excludes the seventh prior date"
+   );
++  Assert.equal(stats.cookies, 4, "Includes today's UTC date");
++  Assert.equal(stats.total, 29, "Sums only records in the seven-date range");
++
++  await TrackingDBService.clearAll();
++});
++
++add_task(async function test_getHomepageStats_reads_persisted_categories() {
++  const db = await Sqlite.openConnection({ path: DB_PATH });
++  await db.execute(SQL.insertCustomTimeEvent, {
++    type: TrackingDBService.TRACKERS_ID,
++    count: 6,
++    timestamp: new Date().toISOString(),
++  });
++  await db.execute(SQL.insertCustomTimeEvent, {
++    type: TrackingDBService.TRACKING_COOKIES_ID,
++    count: 2,
++    timestamp: new Date().toISOString(),
++  });
++  await db.close();
++
++  Assert.deepEqual(await PrivacyMetricsService.getHomepageStats(), {
++    trackers: 6,
++    cookies: 2,
++  });
+ 
+   await TrackingDBService.clearAll();
+ });

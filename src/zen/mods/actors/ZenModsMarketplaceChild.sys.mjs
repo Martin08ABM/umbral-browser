@@ -2,6 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+function modsAreDisabled() {
+  try {
+    return Services.prefs.getBoolPref("zen.themes.disable-all", true);
+  } catch (error) {
+    return true;
+  }
+}
+
 export class ZenModsMarketplaceChild extends JSWindowActorChild {
   constructor() {
     super();
@@ -29,11 +37,17 @@ export class ZenModsMarketplaceChild extends JSWindowActorChild {
   // This function will be called from about:preferences
   checkForModUpdates(event) {
     event.preventDefault();
+    if (modsAreDisabled()) {
+      return;
+    }
 
     this.sendAsyncMessage("ZenModsMarketplace:CheckForUpdates");
   }
 
   initiateModsMarketplace() {
+    if (modsAreDisabled()) {
+      return;
+    }
     this.contentWindow.setTimeout(() => {
       this.addButtons();
       this.injectMarketplaceAPI();

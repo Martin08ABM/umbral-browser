@@ -5,6 +5,9 @@
 - name: zen.mods.updated-value-observer
   value: false
 
+- name: zen.themes.disable-all
+  value: true
+
 - name: zen.mods.auto-update-days
   value: 20 # In days
 

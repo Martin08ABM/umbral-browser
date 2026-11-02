@@ -72,6 +72,20 @@ add_task(async function test_Welcome_Steps() {
     0,
     "Search page should list the available engines"
   );
+  ok(
+    currentPageContent().querySelector("#zen-welcome-searxng-url"),
+    "Search page offers an optional SearXNG instance URL"
+  );
+  ok(
+    currentPageContent().querySelector("#zen-welcome-searxng-add"),
+    "Search page requires an explicit Add action before checking an instance"
+  );
+  const defaultSearchEngine = await lazy.SearchService.getDefault();
+  Assert.equal(
+    (await lazy.SearchService.getDefault()).name,
+    defaultSearchEngine.name,
+    "Rendering the SearXNG form does not change the selected default"
+  );
   for (const option of options) {
     ok(
       option.querySelector("img").getAttribute("src").includes("blob:"),

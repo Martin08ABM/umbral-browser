@@ -102,27 +102,26 @@ export class nsZenUrlbarController {
       return false;
     }
 
-    const shouldOpenURLBar =
-      overridePreferance ||
-      (gZenVerticalTabsManager._canReplaceNewTab &&
-        !werePassedURL &&
-        !searchClipboard &&
-        where === "tab");
+    // Internal callers still open the address bar over the current tab.
+    // Button, menu and Ctrl+T open the new-tab page and focus the address bar.
+    // BROWSER_NEW_TAB_URL keeps private windows and explicit overrides,
+    // including extensions.
+    if (
+      !overridePreferance &&
+      !werePassedURL &&
+      !searchClipboard &&
+      where === "tab"
+    ) {
+      const tab = gBrowser.addTrustedTab(BROWSER_NEW_TAB_URL);
+      gBrowser.selectedTab = tab;
+      openLocation();
+      return true;
+    }
+
+    const shouldOpenURLBar = overridePreferance;
 
     if (!shouldOpenURLBar) {
       return false;
-    }
-
-    // Close the new tab popup on cmd/ctrl + t
-    if (!overridePreferance && gURLBar.hasAttribute("zen-newtab")) {
-      // The _zenHandleUrlbarClose holds a token in it's closure.
-      // Call that instead.
-      if (gURLBar._zenHandleUrlbarClose) {
-        gURLBar._zenHandleUrlbarClose();
-      } else {
-        this.handleUrlbarClose(closeSeq);
-      }
-      return true;
     }
 
     if (this.#clearTimeout) {

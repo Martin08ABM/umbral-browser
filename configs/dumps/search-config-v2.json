@@ -15,5 +15,11 @@
       "ebay",
       "ebay-*"
     ]
+  },
+
+  // Application default for profiles that have not saved their own engine.
+  // Firefox stores an explicit user choice separately and does not replace it.
+  "defaultEngines": {
+    "globalDefault": "ddg"
   }
 }

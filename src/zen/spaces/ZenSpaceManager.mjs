@@ -60,6 +60,13 @@ class nsZenWorkspaces {
   #canDebug = Services.prefs.getBoolPref("zen.workspaces.debug", false);
   #activeWorkspace = "";
 
+  /**
+   * Last container chosen or selected per workspace in this window.
+   * Values include 0 for "no container". Used when the active tab is not
+   * usable for inheritance (e.g. the empty tab).
+   */
+  #lastUsedContainerByWorkspace = new Map();
+
   _workspaceCache = [];
 
   #lastScrollTime = 0;
@@ -158,6 +165,32 @@ class nsZenWorkspaces {
     }
 
     window.addEventListener("resize", this.onWindowResize.bind(this));
+    window.addEventListener(
+      "DOMWindowClose",
+      event => {
+        if (event.target !== window && event.target !== document) {
+          return;
+        }
+        this._suppressHomepageReplacement = true;
+        queueMicrotask(() => {
+          if (event.defaultPrevented && !window.closed) {
+            this._suppressHomepageReplacement = false;
+          }
+        });
+      },
+      true
+    );
+    const onQuit = () => {
+      this._suppressHomepageReplacement = true;
+    };
+    Services.obs.addObserver(onQuit, "quit-application-granted");
+    window.addEventListener(
+      "unload",
+      () => {
+        Services.obs.removeObserver(onQuit, "quit-application-granted");
+      },
+      { once: true }
+    );
     this.addPopupListeners();
 
     if (this.privateWindowOrDisabled) {
@@ -179,6 +212,14 @@ class nsZenWorkspaces {
           if (workspace.containerTabId === userContextId) {
             workspace.containerTabId = 0;
             this.saveWorkspace(workspace);
+          }
+        }
+        if (typeof userContextId === "number") {
+          for (const [workspaceId, lastId] of this
+            .#lastUsedContainerByWorkspace) {
+            if (lastId === userContextId) {
+              this.#lastUsedContainerByWorkspace.delete(workspaceId);
+            }
           }
         }
       };
@@ -220,7 +261,131 @@ class nsZenWorkspaces {
     }
   }
 
-  selectEmptyTab(newTabTarget = null) {
+  /**
+   * Resolve the Personal container id without relying on a fixed numeric
+   * value: built-in Personal when present, else an identity named Personal,
+   * else create one. Returns 0 on failure.
+   */
+  #findOrCreatePersonalContainerId() {
+    try {
+      const { ContextualIdentityService } = ChromeUtils.importESModule(
+        "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs"
+      );
+      const personalLabel = ContextualIdentityService.formatContextLabel(
+        "user-context-personal2"
+      );
+      const identities = ContextualIdentityService.getPublicIdentities();
+      const existing = identities.find(identity => {
+        if (identity.name === "Personal") {
+          return true;
+        }
+        if (identity.name || !personalLabel) {
+          return false;
+        }
+        return (
+          ContextualIdentityService.getUserContextLabel(
+            identity.userContextId
+          ) === personalLabel
+        );
+      });
+      const identity =
+        existing ||
+        ContextualIdentityService.create("Personal", "fingerprint", "blue");
+      return identity?.userContextId || 0;
+    } catch (error) {
+      console.error("Umbral: could not prepare the Personal container", error);
+      return 0;
+    }
+  }
+
+  /**
+   * First launch of a new profile opens its startup tab in the Personal
+   * container. Private windows and later startups do not consume the pref.
+   */
+  #startupPersonalContextId() {
+    const pref = "umbral.startup.use-personal-container";
+    if (
+      this.isPrivateWindow ||
+      !Services.prefs.getBoolPref(pref, false)
+    ) {
+      return 0;
+    }
+    Services.prefs.setBoolPref(pref, false);
+    return this.#findOrCreatePersonalContainerId();
+  }
+
+  #isValidPublicContainerId(userContextId) {
+    if (!userContextId) {
+      return true;
+    }
+    try {
+      const { ContextualIdentityService } = ChromeUtils.importESModule(
+        "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs"
+      );
+      return !!ContextualIdentityService.getPublicIdentityFromId(
+        userContextId
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  #isUsableTabForContainerInheritance(tab) {
+    return !!tab && !tab.closing && !tab.hasAttribute("zen-empty-tab");
+  }
+
+  #recordLastUsedContainer(userContextId, workspaceId = this.activeWorkspace) {
+    if (this.isPrivateWindow || !workspaceId) {
+      return;
+    }
+    const id = userContextId || 0;
+    if (!this.#isValidPublicContainerId(id)) {
+      this.#lastUsedContainerByWorkspace.delete(workspaceId);
+      return;
+    }
+    this.#lastUsedContainerByWorkspace.set(workspaceId, id);
+  }
+
+  /**
+   * Container for new tabs opened without an explicit userContextId
+   * (button, Ctrl+T, menu). Prefer the active tab, then the last used in
+   * this workspace+window, then Personal. 0 ("no container") is a valid
+   * choice. Returns null in private windows so callers keep the space default.
+   * Does not read or write workspace.containerTabId.
+   */
+  #resolveInheritedUserContextId() {
+    if (this.isPrivateWindow) {
+      return null;
+    }
+
+    let tab = gBrowser?.selectedTab;
+    if (tab?.hasAttribute("zen-glance-tab")) {
+      tab = tab.parentNode?.closest(".tabbrowser-tab") || tab;
+    }
+    if (this.#isUsableTabForContainerInheritance(tab)) {
+      const activeId =
+        typeof tab.userContextId === "number"
+          ? tab.userContextId
+          : parseInt(tab.getAttribute("usercontextid"), 10) || 0;
+      if (this.#isValidPublicContainerId(activeId)) {
+        this.#recordLastUsedContainer(activeId);
+        return activeId;
+      }
+    }
+
+    const workspaceId = this.activeWorkspace;
+    if (workspaceId && this.#lastUsedContainerByWorkspace.has(workspaceId)) {
+      const lastId = this.#lastUsedContainerByWorkspace.get(workspaceId);
+      if (this.#isValidPublicContainerId(lastId)) {
+        return lastId;
+      }
+      this.#lastUsedContainerByWorkspace.delete(workspaceId);
+    }
+
+    return this.#findOrCreatePersonalContainerId();
+  }
+
+  selectEmptyTab(newTabTarget = null, userContextId = 0) {
     if (gZenUIManager.testingEnabled) {
       return null;
     }
@@ -228,6 +393,7 @@ class nsZenWorkspaces {
     try {
       // Check if we have a valid empty tab and can replace new tab
       if (
+        !userContextId &&
         this._emptyTab &&
         !this._emptyTab.closing &&
         this._emptyTab.documentGlobal &&
@@ -243,7 +409,8 @@ class nsZenWorkspaces {
       const newTabUrl =
         newTabTarget ||
         Services.prefs.getStringPref("browser.startup.homepage").split("|")[0];
-      let tab = gZenUIManager.openAndChangeToTab(newTabUrl);
+      const options = userContextId > 0 ? { userContextId } : undefined;
+      let tab = gZenUIManager.openAndChangeToTab(newTabUrl, options);
 
       // Set workspace ID if available
       if (window.uuid) {
@@ -929,6 +1096,7 @@ class nsZenWorkspaces {
   }
 
   #hasFinishedInitialization = false;
+  #startupSettled = false;
 
   async onWindowRestored() {
     if (this.#hasFinishedInitialization || !this.workspaceEnabled) {
@@ -971,6 +1139,7 @@ class nsZenWorkspaces {
     this.#settleAdoptedTabs();
     this.#clearAnyZombieTabs(); // Dont call with await
     delete this._resolveInitialized;
+    this.#startupSettled = true;
 
     this.updateWorkspacesChangeContextMenu();
   }
@@ -1071,11 +1240,20 @@ class nsZenWorkspaces {
         });
         cleanup();
       } else {
-        if (gBrowser.selectedTab === this._tabToRemoveForEmpty) {
+        const restoredTab = tabs.find(
+          tab =>
+            tab !== this._tabToRemoveForEmpty &&
+            tab !== this._emptyTab &&
+            tab.linkedBrowser &&
+            !tab.hasAttribute("zen-empty-tab")
+        );
+        if (restoredTab) {
+          gBrowser.selectedTab = restoredTab;
+        } else if (gBrowser.selectedTab === this._tabToRemoveForEmpty) {
           this.log(
             "Selecting empty tab because startup page didnt select a valid tab"
           );
-          this.selectEmptyTab();
+          this.selectEmptyTab(null, this.#startupPersonalContextId());
           initialTabWasEmpty = true;
         }
         this.log("Removing empty tab added by startup page");
@@ -1158,7 +1336,12 @@ class nsZenWorkspaces {
     }
     if (isEmpty) {
       tab._markedForReplacement = true;
-      this._tabToRemoveForEmpty = tab;
+      // Later about:newtab restores and the Zen empty tab are also created as
+      // privileged-about browsers. Keep the original startup tab as the one
+      // to remove, or the restored homepage survives beside a second one.
+      if (!this._tabToRemoveForEmpty) {
+        this._tabToRemoveForEmpty = tab;
+      }
     } else {
       this._initialTab = tab;
       this._initialTab._veryPossiblyEmpty = isEmpty;
@@ -1231,6 +1414,9 @@ class nsZenWorkspaces {
 
   handleTabBeforeClose(tab, closeWindowWithLastTab) {
     delete this._isClosingWindow;
+    if (this._removedByStartupPage) {
+      this._skipHomepageForStartupRemoval = true;
+    }
     if (
       !this.workspaceEnabled ||
       this.__contextIsDelete ||
@@ -1289,17 +1475,87 @@ class nsZenWorkspaces {
     return null;
   }
 
+  /**
+   * The gray surface is Zen's hidden about:blank tab. Replace it with the
+   * real homepage only when this window has no other navigable tab left.
+   * Other spaces, private windows, and a window that is already closing
+   * keep the previous behavior.
+   */
+  #shouldOpenHomepageForLastTab(closingTab) {
+    if (
+      gZenUIManager.testingEnabled ||
+      this.isPrivateWindow ||
+      this._isClosingWindow ||
+      this._suppressHomepageReplacement ||
+      !this.#startupSettled ||
+      window.closed ||
+      Services.startup.shuttingDown
+    ) {
+      return false;
+    }
+    return !gBrowser.tabs.some(
+      other =>
+        other !== closingTab &&
+        !other.closing &&
+        !other.hasAttribute("zen-empty-tab")
+    );
+  }
+
+  #openHomepageTab(closingTab) {
+    const homepage =
+      Services.prefs
+        .getStringPref("browser.startup.homepage", "about:home")
+        .split("|")[0] || "about:home";
+    const userContextId =
+      closingTab?.userContextId || this.getCurrentSpaceContainerId() || 0;
+    const options = { skipAnimation: true };
+    if (userContextId > 0) {
+      options.userContextId = userContextId;
+    }
+    const tab = gZenUIManager.openAndChangeToTab(homepage, options);
+    if (this.activeWorkspace) {
+      tab.setAttribute("zen-workspace-id", this.activeWorkspace);
+    }
+    return tab;
+  }
+
   handleTabBeforeRemove() {
     // We run this AFTER the beforeunload event check, so we can
     // be sure that if we get here, the tab is actually going to be removed,
     // and beforeunload won't be called again. See gh-12922 for an example.
-    if (!this.workspaceEnabled || !this._isClosingWindow) {
+    if (!this.workspaceEnabled) {
       return;
     }
-    // Inside a setTimeout to avoid reentrancy issues.
-    setTimeout(() => {
-      document.getElementById("cmd_closeWindow").doCommand();
-    }, 100);
+    if (this._skipHomepageForStartupRemoval) {
+      this._skipHomepageForStartupRemoval = false;
+      return;
+    }
+    if (this._isClosingWindow) {
+      // Inside a setTimeout to avoid reentrancy issues.
+      setTimeout(() => {
+        document.getElementById("cmd_closeWindow").doCommand();
+      }, 100);
+      return;
+    }
+    // The close is already committed. Zen has selected the hidden blank tab
+    // because that tab keeps the window open. Replace that surface now.
+    if (!this.#startupSettled) {
+      return;
+    }
+    const closingTab = this.#committedClosingTab();
+    if (!this.#shouldOpenHomepageForLastTab(closingTab)) {
+      return;
+    }
+    this.#openHomepageTab(closingTab);
+  }
+
+  #committedClosingTab() {
+    for (const tab of gBrowser.tabs) {
+      if (tab.closing && !tab.hasAttribute("zen-empty-tab")) {
+        return tab;
+      }
+    }
+    return null;
   }
 
   addPopupListeners() {
@@ -3150,6 +3406,17 @@ class nsZenWorkspaces {
       return;
     }
 
+    if (this.#isUsableTabForContainerInheritance(tab)) {
+      const selectedContextId =
+        typeof tab.userContextId === "number"
+          ? tab.userContextId
+          : parseInt(tab.getAttribute("usercontextid"), 10) || 0;
+      this.#recordLastUsedContainer(
+        selectedContextId,
+        workspaceID || this.activeWorkspace
+      );
+    }
+
     if (!isEssential) {
       const activeWorkspace = this.getActiveWorkspace();
       if (!activeWorkspace) {
@@ -3339,12 +3606,29 @@ class nsZenWorkspaces {
     const activeWorkspace = this.getActiveWorkspaceFromCache();
     const activeWorkspaceUserContextId = activeWorkspace?.containerTabId;
 
+    // Explicit container (dropdown / Abrir en contenedor / links that pass
+    // an id) wins over inheritance.
     if (
       fromExternal !== true &&
       typeof userContextId !== "undefined" &&
       userContextId !== activeWorkspaceUserContextId
     ) {
+      this.#recordLastUsedContainer(userContextId);
       return [userContextId, false, undefined];
+    }
+
+    // No explicit container: inherit active → last used → Personal.
+    // Do not fall back to workspace.containerTabId here — Umbral's UI never
+    // writes that field, and using it would fight per-tab inheritance.
+    if (typeof userContextId === "undefined" && fromExternal !== true) {
+      const inherited = this.#resolveInheritedUserContextId();
+      if (inherited !== null) {
+        return [inherited, false, undefined];
+      }
+    }
+
+    if (typeof userContextId !== "undefined") {
+      this.#recordLastUsedContainer(userContextId);
     }
     return [activeWorkspaceUserContextId, true, undefined];
   }

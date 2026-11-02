@@ -300,8 +300,20 @@
   list-style-image: url("bookmark-star-on-tray.svg") !important;
 }
 
-#home-button {
+#home-button,
+.zen-sidebar-home-button {
   list-style-image: url("home.svg") !important;
+}
+
+.zen-sidebar-containers-button {
+  list-style-image: url("container-tab.svg") !important;
+}
+
+.zen-sidebar-containers-button[usercontextid],
+.zen-sidebar-containers-button[usercontextid] > .toolbarbutton-icon {
+  list-style-image: var(--identity-icon) !important;
+  -moz-context-properties: fill, fill-opacity;
+  fill: var(--identity-icon-color);
 }
 
 #toggle_toolbar-menubar,

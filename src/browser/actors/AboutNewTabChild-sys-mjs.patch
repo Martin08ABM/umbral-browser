@@ -1,0 +1,103 @@
+diff --git a/browser/actors/AboutNewTabChild.sys.mjs b/browser/actors/AboutNewTabChild.sys.mjs
+index 88149c9a74..c1131df768 100644
+--- a/browser/actors/AboutNewTabChild.sys.mjs
++++ b/browser/actors/AboutNewTabChild.sys.mjs
+@@ -37,6 +37,63 @@ XPCOMUtils.defineLazyPreferenceGetter(
+ let gNextPortID = 0;
+ 
+ export class AboutNewTabChild extends RemotePageChild {
++  receiveMessage(message) {
++    if (message.name === "UmbralHome:PrivacyData") {
++      const { status, label, trackers, cookies } = message.data ?? {};
++      if (
++        !["active", "disabled", "unavailable"].includes(status) ||
++        typeof label !== "string" ||
++        label.length > 64 ||
++        ![trackers, cookies].every(
++          count =>
++            count === null ||
++            (Number.isSafeInteger(count) && count >= 0)
++        )
++      ) {
++        return;
++      }
++      this._umbralHomeRequestPending = false;
++      const statusElement = this.document?.getElementById(
++        "umbral-home-ublock-status"
++      );
++      if (statusElement) {
++        statusElement.textContent = label;
++        statusElement.removeAttribute("data-l10n-id");
++      }
++      for (const [id, count] of [
++        ["umbral-home-trackers-count", trackers],
++        ["umbral-home-cookies-count", cookies],
++      ]) {
++        const element = this.document?.getElementById(id);
++        if (!element) {
++          continue;
++        }
++        if (count === null) {
++          this.document.l10n.setAttributes(element, "umbral-home-no-data");
++        } else {
++          element.textContent = new Intl.NumberFormat(
++            this.document.documentElement.lang || undefined
++          ).format(count);
++          element.removeAttribute("data-l10n-id");
++        }
++      }
++      return;
++    }
++    super.receiveMessage(message);
++  }
++
++  requestUmbralPrivacyData(force = false) {
++    if (
++      this._umbralHomeRequestPending ||
++      (!force && Date.now() - (this._umbralHomeLastRequest ?? 0) < 1000)
++    ) {
++      return;
++    }
++    this._umbralHomeRequestPending = true;
++    this._umbralHomeLastRequest = Date.now();
++    this.sendAsyncMessage("UmbralHome:GetUboStatus");
++  }
++
+   async handleEvent(event) {
+     if (event.type == "DOMDocElementInserted") {
+       let portID = Services.appinfo.processID + ":" + ++gNextPortID;
+@@ -53,6 +110,11 @@ export class AboutNewTabChild extends RemotePageChild {
+     } else if (event.type == "load") {
+       this.sendAsyncMessage("Load");
+     } else if (event.type == "DOMContentLoaded") {
++      const documentURI = this.contentWindow.document.documentURI;
++      if (documentURI === "about:home" || documentURI === "about:newtab") {
++        this.requestUmbralPrivacyData(true);
++        return;
++      }
+       if (!this.contentWindow.document.body.firstElementChild) {
+         return; // about:newtab is a blank page
+       }
+@@ -132,6 +194,22 @@ export class AboutNewTabChild extends RemotePageChild {
+         // destroyed
+       }
+     } else if (event.type == "pageshow" || event.type == "visibilitychange") {
++      const documentURI = this.contentWindow.document.documentURI;
++      const isUmbralHome =
++        documentURI === "about:home" || documentURI === "about:newtab";
++      if (isUmbralHome && this.document.visibilityState !== "visible") {
++        this._umbralHomeNeedsRefresh = true;
++      }
++      if (
++        isUmbralHome &&
++        this.document.visibilityState === "visible"
++      ) {
++        this.requestUmbralPrivacyData(
++          this._umbralHomeNeedsRefresh ||
++            (event.type === "pageshow" && event.persisted)
++        );
++        this._umbralHomeNeedsRefresh = false;
++      }
+       if (this.document.visibilityState != "visible") {
+         this.contentWindow.windowUtils.imageAnimationMode =
+           Ci.imgIContainer.kDontAnimMode;

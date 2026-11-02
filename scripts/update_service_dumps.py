@@ -29,11 +29,43 @@ def merge_dumps(original, updates):
       )
   ]
 
+  apply_default_engines(merged_data, updates.get('defaultEngines'))
+
   return {
       'data': merged_data,
       **{k: v for k, v in original.items() if k != 'data'},
       'timestamp': updates.get('timestamp', original.get('timestamp'))
   }
+
+
+def apply_default_engines(entries, defaults):
+  """Sets the application default search engine without touching a profile's saved choice."""
+  if not defaults:
+    return
+
+  global_default = defaults.get('globalDefault')
+  if not global_default:
+    return
+
+  known = {
+      entry.get('identifier')
+      for entry in entries
+      if entry.get('recordType') == 'engine'
+  }
+  if global_default not in known:
+    raise SystemExit(
+        f"defaultEngines.globalDefault {global_default!r} is not a search engine in this dump"
+    )
+
+  updated = False
+  for entry in entries:
+    if entry.get('recordType') == 'defaultEngines':
+      entry['globalDefault'] = global_default
+      if 'globalDefaultPrivate' in defaults:
+        entry['globalDefaultPrivate'] = defaults['globalDefaultPrivate']
+      updated = True
+  if not updated:
+    raise SystemExit("search dump has no defaultEngines record to update")
 
 
 def main():

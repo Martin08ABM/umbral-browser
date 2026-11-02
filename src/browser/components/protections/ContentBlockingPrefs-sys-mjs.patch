@@ -1,0 +1,47 @@
+diff --git a/browser/components/protections/ContentBlockingPrefs.sys.mjs b/browser/components/protections/ContentBlockingPrefs.sys.mjs
+index 4b709b7476..e1adb29262 100644
+--- a/browser/components/protections/ContentBlockingPrefs.sys.mjs
++++ b/browser/components/protections/ContentBlockingPrefs.sys.mjs
+@@ -385,6 +385,27 @@ export let ContentBlockingPrefs = {
+     if (this.switchingCategory) {
+       return;
+     }
++    const policy = Services.policies.getActivePolicies();
++    const hasCustomContentBlockingPolicy =
++      policy &&
++      ((policy.EnableTrackingProtection &&
++        !policy.EnableTrackingProtection.Category) ||
++        policy.Cookies);
++    if (
++      !Services.prefs.prefHasUserValue(this.PREF_CB_CATEGORY) &&
++      Services.prefs.getStringPref(this.PREF_CB_CATEGORY, "standard") ===
++        "strict" &&
++      this.prefsMatch("standard") &&
++      !hasCustomContentBlockingPolicy
++    ) {
++      // Umbral selects Strict as the application default. Apply it only when
++      // this profile has no saved category or related protection choices.
++      this.switchingCategory = true;
++      this.setPrefsToCategory("strict", null, true);
++      Services.prefs.setStringPref(this.PREF_CB_CATEGORY, "strict");
++      this.switchingCategory = false;
++      return;
++    }
+     // If PREF_CB_CATEGORY is not set match users to a Content Blocking category. Check if prefs fit
+     // perfectly into strict or standard, otherwise match with custom. If PREF_CB_CATEGORY has previously been set,
+     // a change of one of these prefs necessarily puts us in "custom".
+@@ -399,13 +420,7 @@ export let ContentBlockingPrefs = {
+     // If there is a custom policy which changes a related pref, then put the user in custom so
+     // they still have access to other content blocking prefs, and to keep our default definitions
+     // from changing.
+-    let policy = Services.policies.getActivePolicies();
+-    if (
+-      policy &&
+-      ((policy.EnableTrackingProtection &&
+-        !policy.EnableTrackingProtection.Category) ||
+-        policy.Cookies)
+-    ) {
++    if (hasCustomContentBlockingPolicy) {
+       Services.prefs.setStringPref(this.PREF_CB_CATEGORY, "custom");
+     }
+   },

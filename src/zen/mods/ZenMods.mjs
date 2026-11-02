@@ -102,7 +102,7 @@ class nsZenMods extends nsZenPreloadedFeature {
   }
 
   async #getEnabledMods() {
-    if (Services.prefs.getBoolPref("zen.themes.disable-all", false)) {
+    if (Services.prefs.getBoolPref("zen.themes.disable-all", true)) {
       // eslint-disable-next-line no-console
       console.info("[ZenMods]: Mods are disabled by user preference.");
       return [];
@@ -487,7 +487,7 @@ class nsZenMods extends nsZenPreloadedFeature {
       await SessionStore.promiseInitialized;
 
       if (
-        Services.prefs.getBoolPref("zen.themes.disable-all", false) ||
+        Services.prefs.getBoolPref("zen.themes.disable-all", true) ||
         Services.appinfo.inSafeMode
       ) {
         console.warn("[ZenMods]: Mods disabled by user or in safe mode.");

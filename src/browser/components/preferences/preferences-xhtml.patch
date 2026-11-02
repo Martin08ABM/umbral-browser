@@ -1,5 +1,5 @@
 diff --git a/browser/components/preferences/preferences.xhtml b/browser/components/preferences/preferences.xhtml
-index 1b8c38159314b6edee9e6f455beb2b63db1ad3f0..1308345db640dba6b2848b49ef7c11819f9f5727 100644
+index e8da75f2c2..e0d23fe0b9 100644
 --- a/browser/components/preferences/preferences.xhtml
 +++ b/browser/components/preferences/preferences.xhtml
 @@ -39,6 +39,8 @@
@@ -11,7 +11,7 @@ index 1b8c38159314b6edee9e6f455beb2b63db1ad3f0..1308345db640dba6b2848b49ef7c1181
    <link rel="localization" href="branding/brand.ftl"/>
    <link rel="localization" href="browser/browser.ftl"/>
      <!-- Used by fontbuilder.js -->
-@@ -118,6 +120,26 @@
+@@ -121,6 +123,26 @@
          iconsrc="chrome://browser/skin/preferences/category-general.svg"
          data-l10n-id="pane-general-title">
        </html:moz-page-nav-button>
@@ -38,10 +38,21 @@ index 1b8c38159314b6edee9e6f455beb2b63db1ad3f0..1308345db640dba6b2848b49ef7c1181
        <html:moz-page-nav-button id="category-sync"
          hidden="true"
          view="paneSync"
-@@ -248,6 +270,10 @@
+@@ -257,6 +279,21 @@
  #include privacy.inc.xhtml
  #include sync.inc.xhtml
  #include moreFromMozilla.inc.xhtml
++    <vbox id="umbralSearxngSettings" data-category="paneSearch">
++      <html:h2 data-l10n-id="zen-searxng-title" />
++      <html:p data-l10n-id="zen-searxng-description" />
++      <html:label for="umbralSearxngUrl" data-l10n-id="zen-searxng-url-label" />
++      <html:input id="umbralSearxngUrl" type="url" autocomplete="url" />
++      <hbox>
++        <button id="umbralSearxngAdd" data-l10n-id="zen-searxng-add" />
++        <button id="umbralSearxngRemove" data-l10n-id="zen-searxng-remove" disabled="true" />
++      </hbox>
++      <html:p id="umbralSearxngStatus" role="status" aria-live="polite" />
++    </vbox>
 +#include zenLooksAndFeel.inc.xhtml
 +#include zenKeyboardShortcuts.inc.xhtml
 +#include zenTabsManagement.inc.xhtml

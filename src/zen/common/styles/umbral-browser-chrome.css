@@ -1,0 +1,319 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Fixed rows stay in the content column, so the page starts under their
+   real height. Autohide lifts the same wrapper out of flow and only then
+   paints it over the page. Zen compact mode owns the toolbar when it is
+   set to hide it, and then this attribute stays off. DOM fullscreen keeps
+   Zen's own collapse of this wrapper. */
+:root[umbral-browser-chrome]:not([inDOMFullscreen="true"]) {
+  --umbral-chrome-pad-block: 5px;
+  --umbral-chrome-pad-inline: 10px;
+  --umbral-chrome-gap: 6px;
+  --urlbar-height: 34px;
+
+  & #zen-appcontent-wrapper {
+    position: relative;
+  }
+
+  & #zen-appcontent-navbar-wrapper {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    z-index: 5 !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    pointer-events: none;
+    background: transparent;
+    container-type: inline-size;
+    container-name: umbral-topbar;
+  }
+
+  /* A hidden autohide bar does not reserve space. Revealing it paints over
+     the page instead of pushing the document down. */
+  &[umbral-urlbar-autohide]:not([umbral-on-home]) #zen-appcontent-navbar-wrapper {
+    position: absolute !important;
+    inset-inline: 0 !important;
+    top: 0 !important;
+  }
+
+  & #zen-appcontent-navbar-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0 !important;
+    pointer-events: none;
+  }
+
+  & #umbral-chrome-hotspot {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: calc(2 * var(--umbral-chrome-pad-block));
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  &[umbral-urlbar-autohide]:not([umbral-on-home])
+    #zen-appcontent-navbar-wrapper:not([umbral-chrome-open])
+    #umbral-chrome-hotspot {
+    pointer-events: auto;
+  }
+
+  & #nav-bar,
+  & #PersonalToolbar {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    pointer-events: auto;
+    background: var(--zen-main-browser-background);
+  }
+
+  & #nav-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--umbral-chrome-gap) !important;
+    box-sizing: border-box;
+    padding-block: var(--umbral-chrome-pad-block) !important;
+    padding-inline: var(--umbral-chrome-pad-inline) !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible;
+  }
+
+  & #nav-bar-customization-target {
+    display: flex;
+    align-items: center;
+    gap: var(--umbral-chrome-gap);
+  }
+
+  & #nav-bar-customization-target > * {
+    margin-block: 0 !important;
+    margin-inline: 0 !important;
+  }
+
+  & #nav-bar > .titlebar-buttonbox-container {
+    height: auto !important;
+    align-self: center;
+  }
+
+  & #nav-bar > .titlebar-buttonbox-container .titlebar-button {
+    height: auto !important;
+  }
+
+  & #nav-bar toolbarspring {
+    display: none !important;
+  }
+
+  /* Zen moves the navbar overflow button out of the nav-bar in its single
+     toolbar layout. Put the original button back next to the URL bar and show
+     it only while Firefox's native overflow list contains widgets. */
+  &:has(#widget-overflow-list > *) #nav-bar-overflow-button {
+    display: flex !important;
+  }
+
+  & #nav-bar-customization-target {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+
+  & #urlbar-container {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    height: var(--urlbar-height) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    align-self: center !important;
+  }
+
+  & #urlbar {
+    --urlbar-container-height: var(--urlbar-height) !important;
+    --urlbar-height: 34px !important;
+  }
+
+  & #urlbar-input {
+    line-height: calc(var(--urlbar-height) - 2px) !important;
+  }
+
+  /* Zen collapses the lock and page actions until the sidebar urlbar is
+     hovered. The bar is no longer in the sidebar, so keep them visible. */
+  & #urlbar:not([breakout-extend]) :is(.identity-box-button, .urlbar-page-action) {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  & #bookmarks-toolbar-button,
+  & #bookmarks-toolbar-placeholder {
+    display: none !important;
+  }
+
+  & #PersonalToolbar {
+    min-height: 0 !important;
+    max-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  &[umbral-on-home] #PersonalToolbar,
+  &[umbral-urlbar-autohide]:not([umbral-on-home])
+    #zen-appcontent-navbar-wrapper[umbral-chrome-open]
+    #PersonalToolbar {
+    height: auto !important;
+    max-height: none !important;
+    box-sizing: border-box;
+    padding-block: var(--umbral-chrome-pad-block) !important;
+    padding-inline: var(--umbral-chrome-pad-inline) !important;
+    align-items: center;
+    opacity: 1;
+    overflow: visible;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  &[umbral-urlbar-autohide]:not([umbral-on-home]) #nav-bar {
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  &[umbral-urlbar-autohide]:not([umbral-on-home])
+    #zen-appcontent-navbar-wrapper[umbral-chrome-open]
+    #nav-bar,
+  &[umbral-urlbar-autohide]:not([umbral-on-home]) #nav-bar:focus-within,
+  &[umbral-urlbar-autohide]:not([umbral-on-home])
+    #nav-bar:has(#urlbar:is(:popover-open, [open], [breakout-extend])) {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    padding-block: var(--umbral-chrome-pad-block) !important;
+    padding-inline: var(--umbral-chrome-pad-inline) !important;
+    opacity: 1;
+    overflow: visible;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* The open address bar is a popover. Zen's single-toolbar rule sizes
+     #urlbar[open] to min(90%, 40rem), and floating-on-type (Ctrl+L) also
+     centers it with left:50% and --zen-urlbar-width. Anchor the popover to
+     the field's slot so it keeps that box. The results view lives inside
+     the same popover, so it inherits the width. */
+  & #urlbar-container {
+    anchor-name: --umbral-urlbar-slot;
+  }
+
+  & #urlbar:is([open], :popover-open, [breakout-extend]) {
+    position-anchor: --umbral-urlbar-slot;
+    inset-inline-start: anchor(start) !important;
+    inset-inline-end: auto !important;
+    inset-block-start: anchor(start) !important;
+    inset-block-end: auto !important;
+    width: anchor-size(--umbral-urlbar-slot width) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    translate: none !important;
+    margin-inline: 0 !important;
+    font-size: inherit !important;
+    pointer-events: auto;
+    --urlbar-margin-inline: 0px !important;
+    --urlbar-container-height: var(--urlbar-height, var(--zen-toolbar-height)) !important;
+    --urlbarView-results-padding: 0px !important;
+  }
+
+  /* Floating-on-type sets an explicit height on the container. Keep the
+     field at its own height and centered in the padded row. */
+  & #urlbar-container:has(#urlbar[zen-floating-urlbar="true"]) {
+    height: var(--urlbar-height, var(--zen-toolbar-height)) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    align-self: center !important;
+    background: transparent !important;
+  }
+}
+
+/* The query styles the bar, which sits inside the container, so a narrow
+   content column can tighten the inset without a fixed window width. */
+@container umbral-topbar (inline-size < 720px) {
+  :root[umbral-browser-chrome]:not([inDOMFullscreen="true"]) #nav-bar,
+  :root[umbral-browser-chrome]:not([inDOMFullscreen="true"]) #PersonalToolbar {
+    --umbral-chrome-pad-inline: 6px;
+    --umbral-chrome-gap: 4px;
+  }
+}
+
+/* Compact-mode toggle and Clear sit above the home/new-tab row. Drop them
+   from the sidebar layout; both keep other entries (shortcuts, menus). */
+:root[umbral-browser-chrome] {
+  & #zen-sidebar-top-buttons {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+  }
+
+  & .zen-workspace-close-unpinned-tabs-button {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Without pinned tabs the Clear row still reserved height. Collapse it
+     unless a real pinned tab or folder is present. */
+  & .zen-workspace-pinned-tabs-section:not(
+      :has(> tab, > tab-group, > zen-folder, > .tab-group)
+    )
+    > .pinned-tabs-container-separator {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  & .zen-workspace-pinned-tabs-section[hide-separator]
+    > .pinned-tabs-container-separator {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}

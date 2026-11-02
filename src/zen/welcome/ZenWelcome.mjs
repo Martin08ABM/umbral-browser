@@ -481,6 +481,20 @@
       return this._engines.find(engine => engine.name == aName);
     }
 
+    getEngineById(aId) {
+      return this._engines.find(engine => engine.originalEngine.id === aId);
+    }
+
+    addEngine(engine) {
+      const existing = this.getEngineById(engine.id);
+      if (existing) {
+        return existing;
+      }
+      const cloned = this._cloneEngine(engine);
+      this._engines.push(cloned);
+      return cloned;
+    }
+
     _cloneEngine(aEngine) {
       const clonedObj = {};
 
@@ -601,7 +615,14 @@
           const engineStore = new ZenSearchEngineStore();
           await engineStore.init();
           const defaultEngine = await lazy.SearchService.getDefault();
-          for (const engine of engineStore.getEngines()) {
+          const appendEngineOption = engine => {
+            if (
+              content.querySelector(
+                `#zen-welcome-engine-${CSS.escape(engine.name.replace(/\s+/g, "-"))}`
+              )
+            ) {
+              return;
+            }
             const iconWrapper = document.createElement("div");
             iconWrapper.className = "engine-icon-wrapper";
             const iconBackdrop = document.createElement("img");
@@ -627,7 +648,170 @@
                 engineStore.setDefaultEngine(engine)
               );
             content.appendChild(option);
+          };
+          for (const engine of engineStore.getEngines()) {
+            appendEngineOption(engine);
           }
+
+          const searxng = document.createElement("section");
+          searxng.className = "zen-welcome-searxng";
+          const description = document.createElement("p");
+          description.setAttribute(
+            "data-l10n-id",
+            "zen-welcome-searxng-description"
+          );
+          const label = document.createElement("label");
+          label.htmlFor = "zen-welcome-searxng-url";
+          label.setAttribute("data-l10n-id", "zen-welcome-searxng-url-label");
+          const input = document.createElement("input");
+          input.id = "zen-welcome-searxng-url";
+          input.type = "url";
+          input.autocomplete = "url";
+          const addButton = document.createElement("button");
+          addButton.id = "zen-welcome-searxng-add";
+          addButton.type = "button";
+          addButton.setAttribute(
+            "data-l10n-id",
+            "zen-welcome-searxng-add"
+          );
+          const status = document.createElement("p");
+          status.id = "zen-welcome-searxng-status";
+          status.setAttribute("role", "status");
+          status.setAttribute("aria-live", "polite");
+          searxng.append(description, label, input, addButton, status);
+          content.appendChild(searxng);
+          document.l10n.translateElements([description, label, addButton]);
+
+          let pendingHTTPURL = "";
+          addButton.addEventListener("click", async () => {
+            let instance;
+            try {
+              instance = new URL(input.value.trim());
+            } catch {
+              document.l10n.setAttributes(
+                status,
+                "zen-welcome-searxng-invalid-url"
+              );
+              return;
+            }
+            if (
+              !["https:", "http:"].includes(instance.protocol) ||
+              !instance.hostname ||
+              instance.username ||
+              instance.password ||
+              instance.search ||
+              instance.hash
+            ) {
+              document.l10n.setAttributes(
+                status,
+                "zen-welcome-searxng-invalid-url"
+              );
+              return;
+            }
+            if (instance.protocol === "http:") {
+              if (pendingHTTPURL !== instance.href) {
+                pendingHTTPURL = instance.href;
+                const local =
+                  instance.hostname === "localhost" ||
+                  instance.hostname.endsWith(".localhost") ||
+                  instance.hostname === "127.0.0.1" ||
+                  instance.hostname === "[::1]";
+                document.l10n.setAttributes(
+                  status,
+                  local
+                    ? "zen-welcome-searxng-http-local-confirm"
+                    : "zen-welcome-searxng-http-confirm"
+                );
+                return;
+              }
+            }
+            pendingHTTPURL = "";
+
+            const descriptor = new URL(instance.href);
+            if (!/\/opensearch\.xml$/i.test(descriptor.pathname)) {
+              descriptor.pathname = `${descriptor.pathname.replace(/\/$/, "")}/opensearch.xml`;
+            }
+            descriptor.searchParams.set("autocomplete", "");
+            document.l10n.setAttributes(
+              status,
+              "zen-welcome-searxng-checking"
+            );
+            addButton.disabled = true;
+            try {
+              const service = lazy.SearchService;
+              await service.init();
+              const storedId = Services.prefs.getStringPref(
+                "umbral.search.searxng.engineId",
+                ""
+              );
+              const storedURL = Services.prefs.getStringPref(
+                "umbral.search.searxng.openSearchUrl",
+                ""
+              );
+              let engine;
+              if (storedId) {
+                if (storedURL !== descriptor.href) {
+                  throw new Error("edit-in-settings");
+                }
+                engine = service.getEngineById(storedId);
+              }
+              if (!engine) {
+                engine = await service.addOpenSearchEngine(
+                  descriptor.href,
+                  null,
+                  null
+                );
+                const searchURL = engine.getURLOfType("text/html");
+                let targetURL;
+                try {
+                  targetURL = searchURL?.template
+                    ? new URL(
+                        searchURL.template.replaceAll("{searchTerms}", "test"),
+                        descriptor.href
+                      )
+                    : null;
+                } catch {
+                  targetURL = null;
+                }
+                if (
+                  !targetURL ||
+                  targetURL.origin !== descriptor.origin ||
+                  engine.getURLOfType("application/x-suggestions+json")
+                ) {
+                  await service.removeEngine(
+                    engine,
+                    service.CHANGE_REASON.USER
+                  );
+                  throw new Error("descriptor-invalid");
+                }
+                Services.prefs.setStringPref(
+                  "umbral.search.searxng.engineId",
+                  engine.id
+                );
+                Services.prefs.setStringPref(
+                  "umbral.search.searxng.openSearchUrl",
+                  descriptor.href
+                );
+              }
+              const optionEngine = engineStore.addEngine(engine);
+              appendEngineOption(optionEngine);
+              document.l10n.setAttributes(
+                status,
+                "zen-welcome-searxng-added"
+              );
+            } catch (error) {
+              console.error("Umbral welcome SearXNG setup failed", error);
+              const messageId =
+                error.message === "edit-in-settings"
+                  ? "zen-welcome-searxng-edit-in-settings"
+                  : error.message === "suggestions-present"
+                    ? "zen-welcome-searxng-suggestions-error"
+                    : "zen-welcome-searxng-error";
+              document.l10n.setAttributes(status, messageId);
+            } finally {
+              addButton.disabled = false;
+            }
+          });
         },
       },
       {

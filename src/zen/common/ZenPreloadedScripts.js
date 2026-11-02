@@ -5,6 +5,39 @@
 // prettier-ignore
 // eslint-disable-next-line no-lone-blocks
 {
+  // Search settings are created for every profile, so the file alone is not
+  // a user choice. Its absence means the profile has never stored a search
+  // default and should receive Umbral's application default. An explicit
+  // choice is defaultEngineId inside that file, read later.
+  {
+    const legacyHome = "chrome://browser/content/umbral-home/home.html";
+    if (
+      Services.prefs.prefHasUserValue("browser.startup.homepage") &&
+      Services.prefs.getStringPref("browser.startup.homepage") === legacyHome
+    ) {
+      Services.prefs.clearUserPref("browser.startup.homepage");
+    }
+    const protectPref = "umbral.search.protect-default";
+    if (!Services.prefs.getBoolPref(protectPref, false)) {
+      const settings = Services.dirsvc.get("ProfD", Ci.nsIFile);
+      settings.append("search.json.mozlz4");
+      if (!settings.exists()) {
+        Services.prefs.setBoolPref(protectPref, true);
+        if (!PrivateBrowsingUtils.isWindowPrivate(window)) {
+          Services.prefs.setBoolPref(
+            "umbral.startup.use-personal-container",
+            true
+          );
+        }
+      }
+    }
+  }
+
+  ChromeUtils.importESModule(
+    "chrome://browser/content/UmbralDefaultSearch.sys.mjs",
+    { global: "current" }
+  );
+
   ChromeUtils.defineESModuleGetters(this, {
     gZenSpaceRoutingManager:
       "resource:///modules/zen/spacerouting/ZenSpaceRoutingManager.sys.mjs",
@@ -14,6 +47,7 @@
 
   let scripts = [
     "chrome://browser/content/ZenStartup.mjs",
+    "chrome://browser/content/UmbralBrowserChrome.mjs",
     "resource:///modules/zen/ZenSpaceManager.mjs",
     "chrome://browser/content/zen-components/ZenCompactMode.mjs",
     "chrome://browser/content/ZenUIManager.mjs",

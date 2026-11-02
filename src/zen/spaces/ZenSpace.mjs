@@ -49,6 +49,7 @@ class nsZenCollapsiblePins extends nsZenFolder {
 export class nsZenWorkspace extends MozXULElement {
   #initialPinnedElementChildrenCount;
   #hasConnected = false;
+  #containerLabelToken = 0;
 
   static get markup() {
     return `
@@ -73,15 +74,26 @@ export class nsZenWorkspace extends MozXULElement {
           </vbox>
           <vbox class="zen-workspace-tabs-section zen-workspace-normal-tabs-section">
             <!-- Let it as an ID to mantain compatibility with firefox's tabbrowser -->
-            <hbox id="tabbrowser-arrowscrollbox-periphery">
-              <toolbartabstop/>
-              <toolbarbutton id="tabs-newtab-button"
-                             class="toolbarbutton-1"
-                             command="cmd_newNavigatorTab"
-                             tooltip="dynamic-shortcut-tooltip"
-                             data-l10n-id="tabs-toolbar-new-tab"/>
-              <spacer class="closing-tabs-spacer" style="width: 0;"/>
-            </hbox>
+            <vbox id="tabbrowser-arrowscrollbox-periphery">
+              <hbox class="zen-sidebar-newtab-row">
+                <toolbartabstop/>
+                <toolbarbutton class="toolbarbutton-1 zen-sidebar-home-button"
+                               data-l10n-id="umbral-sidebar-home"/>
+                <toolbarbutton id="tabs-newtab-button"
+                               class="toolbarbutton-1"
+                               command="cmd_newNavigatorTab"
+                               tooltip="dynamic-shortcut-tooltip"
+                               data-l10n-id="tabs-toolbar-new-tab"/>
+                <spacer class="closing-tabs-spacer" style="width: 0;"/>
+              </hbox>
+              <box class="zen-sidebar-containers-separator"/>
+              <toolbarbutton class="toolbarbutton-1 zen-sidebar-containers-button"
+                             type="menu"
+                             aria-haspopup="menu"
+                             aria-expanded="false">
+                <menupopup class="zen-sidebar-containers-popup"/>
+              </toolbarbutton>
+            </vbox>
           </vbox>
         </arrowscrollbox>
         <vbox class="zen-workspace-empty-space" flex="1" />
@@ -110,6 +122,25 @@ export class nsZenWorkspace extends MozXULElement {
       "_showNewTabButtonTop",
       "zen.view.show-newtab-button-top",
       false
+    );
+    const onContainersPrefChanged = () => {
+      if (this.#hasConnected) {
+        this.#updateContainersButton();
+      }
+    };
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_containersEnabled",
+      "privacy.userContext.enabled",
+      false,
+      onContainersPrefChanged
+    );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_containersUIEnabled",
+      "privacy.userContext.ui.enabled",
+      false,
+      onContainersPrefChanged
     );
   }
 
@@ -297,6 +328,286 @@ export class nsZenWorkspace extends MozXULElement {
         tabPinCallback();
       }
     });
+
+    this.#setupHomeButton();
+    this.#setupContainersButton();
+    this.#setupNewTabButtonVisibility();
+  }
+
+  /**
+   * One button per workspace, so this stays a class rather than an id.
+   * #home-button is the single customizable navbar widget.
+   */
+  #setupHomeButton() {
+    const homeButton = this.querySelector(".zen-sidebar-home-button");
+    homeButton.addEventListener("click", event => {
+      // A middle-click anywhere in #zen-tabs-wrapper opens a blank tab.
+      // Keep that click on the homepage action, which opens a new tab itself.
+      if (event.button === 1) {
+        event.stopPropagation();
+      }
+      BrowserCommands.home(event);
+    });
+    homeButton.addEventListener("keypress", event => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      BrowserCommands.home(event);
+    });
+  }
+
+  /**
+   * Firefox containers, not the workspace's default container.
+   * The menu is the same one used by the new-tab button: each identity opens
+   * a new tab via Browser:NewUserContextTab, and manage opens paneContainers.
+   * One button per workspace, so this stays a class rather than an id.
+   */
+  #setupContainersButton() {
+    const button = this.querySelector(".zen-sidebar-containers-button");
+    const popup = button.querySelector(".zen-sidebar-containers-popup");
+
+    button.addEventListener("click", event => {
+      // A middle-click anywhere in #zen-tabs-wrapper opens a blank tab.
+      if (event.button === 1) {
+        event.stopPropagation();
+      }
+    });
+
+    button.addEventListener("keydown", event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      if (
+        event.key !== "Enter" &&
+        event.key !== " " &&
+        event.key !== "ArrowDown" &&
+        event.key !== "ArrowUp"
+      ) {
+        return;
+      }
+      // A menu button opens from the mouse on its own. Arrow, Enter and
+      // Space do not, except for Alt+Arrow and F4, which the platform handles.
+      if (popup.state !== "closed") {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      button.open = true;
+    });
+
+    popup.addEventListener("popupshowing", event => {
+      if (event.target !== popup) {
+        return;
+      }
+      window.createUserContextMenu(event, {
+        isContextMenu: false,
+        showDefaultTab: false,
+        showAddContainer: false,
+        showManageContainers: true,
+        containerSource: "zen_sidebar",
+      });
+      const first = popup.firstElementChild;
+      if (first?.localName === "menuseparator") {
+        first.remove();
+      }
+      const currentId = this.#activeTabUserContextId();
+      if (currentId) {
+        const currentItem = popup.querySelector(
+          `menuitem[data-usercontextid="${currentId}"]`
+        );
+        if (currentItem) {
+          currentItem.classList.add("zen-sidebar-containers-current-item");
+          currentItem.setAttribute("aria-current", "true");
+        }
+      }
+      button.setAttribute("aria-expanded", "true");
+    });
+
+    popup.addEventListener("popuphidden", event => {
+      if (event.target !== popup) {
+        return;
+      }
+      button.setAttribute("aria-expanded", "false");
+    });
+
+    const refreshIndicator = () => this.#updateContainerIndicator();
+    const onTabAttrModified = event => {
+      if (
+        event.target === gBrowser.selectedTab &&
+        event.detail?.changed?.includes("usercontextid")
+      ) {
+        refreshIndicator();
+      }
+    };
+    const onIdentityChanged = () => refreshIndicator();
+    window.addEventListener("TabSelect", refreshIndicator);
+    gBrowser.tabContainer.addEventListener(
+      "TabAttrModified",
+      onTabAttrModified
+    );
+    Services.obs.addObserver(onIdentityChanged, "contextual-identity-updated");
+    Services.obs.addObserver(onIdentityChanged, "contextual-identity-deleted");
+    window.addEventListener(
+      "unload",
+      () => {
+        window.removeEventListener("TabSelect", refreshIndicator);
+        gBrowser.tabContainer.removeEventListener(
+          "TabAttrModified",
+          onTabAttrModified
+        );
+        Services.obs.removeObserver(
+          onIdentityChanged,
+          "contextual-identity-updated"
+        );
+        Services.obs.removeObserver(
+          onIdentityChanged,
+          "contextual-identity-deleted"
+        );
+      },
+      { once: true }
+    );
+
+    this.#updateContainersButton();
+    this.#updateContainerIndicator();
+  }
+
+  #updateContainersButton() {
+    const button = this.querySelector(".zen-sidebar-containers-button");
+    const separator = this.querySelector(".zen-sidebar-containers-separator");
+    if (!button) {
+      return;
+    }
+    const hidden = !(
+      this._containersEnabled &&
+      this._containersUIEnabled &&
+      !PrivateBrowsingUtils.isWindowPrivate(window)
+    );
+    button.hidden = hidden;
+    if (separator) {
+      separator.hidden = hidden;
+    }
+  }
+
+  /**
+   * The selected tab's container. A workspace's containerTabId is only the
+   * default for new tabs in that space, so it is not read here.
+   */
+  #activeTabUserContextId() {
+    const tab = gBrowser.selectedTab;
+    if (!tab) {
+      return 0;
+    }
+    const id = tab.userContextId;
+    return typeof id === "number"
+      ? id
+      : parseInt(tab.getAttribute("usercontextid"), 10) || 0;
+  }
+
+  #updateContainerIndicator() {
+    const button = this.querySelector(".zen-sidebar-containers-button");
+    if (!button) {
+      return;
+    }
+    for (const className of [...button.classList]) {
+      if (
+        className.startsWith("identity-color-") ||
+        className.startsWith("identity-icon-")
+      ) {
+        button.classList.remove(className);
+      }
+    }
+
+    const userContextId = this.#activeTabUserContextId();
+    let identity = null;
+    let name = "";
+    if (userContextId) {
+      try {
+        identity =
+          ContextualIdentityService.getPublicIdentityFromId(userContextId);
+        name = identity
+          ? ContextualIdentityService.getUserContextLabel(
+              identity.userContextId
+            ) || ""
+          : "";
+      } catch (error) {
+        console.error(
+          "Umbral: could not read the active tab container.",
+          error
+        );
+        identity = null;
+        name = "";
+      }
+    }
+    if (!identity?.icon || !name) {
+      button.removeAttribute("usercontextid");
+      this.#applyContainerL10n(button, "zen-sidebar-containers-none");
+      return;
+    }
+
+    button.setAttribute("usercontextid", String(identity.userContextId));
+    button.classList.add(`identity-color-${identity.color}`);
+    button.classList.add(`identity-icon-${identity.icon}`);
+    this.#applyContainerL10n(button, "zen-sidebar-containers-current", {
+      name,
+    });
+  }
+
+  /**
+   * Fluent owns the string. The toolbarbutton widget only paints a child
+   * label, and setAttributes alone can leave that child empty, so the
+   * translated attributes are copied onto the button and its text node.
+   */
+  async #applyContainerL10n(button, id, args) {
+    const token = ++this.#containerLabelToken;
+    const request = args ? { id, args } : { id };
+    let messages = null;
+    try {
+      messages = await document.l10n.formatMessages([request]);
+    } catch (error) {
+      console.error("Umbral: could not format the container label.", error);
+    }
+    if (token !== this.#containerLabelToken || !button.isConnected) {
+      return;
+    }
+    if (args) {
+      document.l10n.setAttributes(button, id, args);
+    } else {
+      document.l10n.setAttributes(button, id);
+    }
+    const attributes = messages?.[0]?.attributes;
+    if (!attributes) {
+      return;
+    }
+    const text = this.#ensureContainerLabelNode(button);
+    for (const attribute of attributes) {
+      if (attribute.value == null) {
+        continue;
+      }
+      button.setAttribute(attribute.name, attribute.value);
+      if (attribute.name === "label" && text) {
+        text.setAttribute("value", attribute.value);
+      }
+    }
+  }
+
+  #ensureContainerLabelNode(button) {
+    let text = button.querySelector(":scope > .toolbarbutton-text");
+    if (text) {
+      return text;
+    }
+    if (typeof button.render === "function") {
+      button.render();
+      text = button.querySelector(":scope > .toolbarbutton-text");
+      if (text) {
+        return text;
+      }
+    }
+    text = document.createXULElement("label");
+    text.classList.add("toolbarbutton-text");
+    text.setAttribute("crop", "end");
+    text.setAttribute("flex", "1");
+    button.insertBefore(text, button.querySelector(":scope > menupopup"));
+    return text;
   }
 
   get active() {
@@ -310,6 +621,10 @@ export class nsZenWorkspace extends MozXULElement {
       this.removeAttribute("active");
     }
     this.#updateOverflow();
+    if (value) {
+      this.#updateContainerIndicator();
+      this.#updateNewTabButtonVisibility();
+    }
   }
 
   get hasPinnedTabs() {
@@ -385,6 +700,115 @@ export class nsZenWorkspace extends MozXULElement {
 
   get newTabButton() {
     return this.querySelector("#tabs-newtab-button");
+  }
+
+  /**
+   * about:home is the configured homepage. about:newtab renders that same
+   * built-in page, so both count. A custom homepage is matched on its own.
+   */
+  #setupNewTabButtonVisibility() {
+    const refresh = () => this.#updateNewTabButtonVisibility();
+    const progressListener = {
+      onLocationChange: webProgress => {
+        if (webProgress && !webProgress.isTopLevel) {
+          return;
+        }
+        refresh();
+      },
+    };
+    gBrowser.addProgressListener(progressListener);
+    window.addEventListener("TabSelect", refresh);
+    window.addEventListener(
+      "unload",
+      () => {
+        window.removeEventListener("TabSelect", refresh);
+        gBrowser.removeProgressListener(progressListener);
+      },
+      { once: true }
+    );
+    refresh();
+  }
+
+  #normalizedPageSpec(specOrURI) {
+    if (!specOrURI) {
+      return "";
+    }
+    let spec = "";
+    let scheme = "";
+    if (typeof specOrURI === "string") {
+      spec = specOrURI;
+      scheme = spec.split(":")[0];
+    } else {
+      try {
+        spec = specOrURI.specIgnoringRef || specOrURI.spec || "";
+        scheme = specOrURI.scheme || "";
+      } catch (error) {
+        return "";
+      }
+    }
+    if (scheme === "about") {
+      const query = spec.indexOf("?");
+      return query >= 0 ? spec.slice(0, query) : spec;
+    }
+    if (
+      (scheme === "http" || scheme === "https") &&
+      spec.endsWith("/")
+    ) {
+      spec = spec.slice(0, -1);
+    }
+    return spec;
+  }
+
+  #homepageSpecs() {
+    let homepage = "about:home";
+    try {
+      homepage = HomePage.get(window) || homepage;
+    } catch (error) {
+      console.error("Umbral: could not read the homepage.", error);
+    }
+    const specs = new Set();
+    for (const part of homepage.split("|")) {
+      const trimmed = part.trim();
+      if (!trimmed) {
+        continue;
+      }
+      try {
+        specs.add(this.#normalizedPageSpec(Services.io.newURI(trimmed)));
+      } catch (error) {
+        specs.add(this.#normalizedPageSpec(trimmed));
+      }
+    }
+    if (specs.has("about:home") || specs.has("about:newtab")) {
+      specs.add("about:home");
+      specs.add("about:newtab");
+    }
+    return specs;
+  }
+
+  #activeTabShowsHomepage() {
+    const browser = gBrowser.selectedBrowser;
+    if (!browser?.currentURI) {
+      return false;
+    }
+    return this.#homepageSpecs().has(
+      this.#normalizedPageSpec(browser.currentURI)
+    );
+  }
+
+  #updateNewTabButtonVisibility() {
+    const button = this.newTabButton;
+    const homeButton = this.querySelector(".zen-sidebar-home-button");
+    const onHomepage = this.#activeTabShowsHomepage();
+    if (homeButton) {
+      homeButton.toggleAttribute("umbral-home-current", onHomepage);
+    }
+    if (!button) {
+      return;
+    }
+    button.hidden = onHomepage;
+    if (onHomepage && document.activeElement === button) {
+      button.blur();
+    }
   }
 
   onGradientCacheChanged() {

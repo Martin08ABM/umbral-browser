@@ -414,6 +414,9 @@ disabled="Disabled by import_external_tests.py"
 ["browser_tab_groups_restore_saved.js"]
 disabled="Disabled by import_external_tests.py"
 
+["browser_zen_session_startup_state.js"]
+prefs = ["zen.window-sync.enabled=true"]
+
 ["browser_tab_groups_restore_simple.js"]
 disabled="Disabled by import_external_tests.py"
 

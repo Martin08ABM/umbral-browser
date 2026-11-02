@@ -1,0 +1,40 @@
+diff --git a/toolkit/components/antitracking/test/browser/browser_flushOnQuery.js b/toolkit/components/antitracking/test/browser/browser_flushOnQuery.js
+index 5af8181667..3a7b6d97bf 100644
+--- a/toolkit/components/antitracking/test/browser/browser_flushOnQuery.js
++++ b/toolkit/components/antitracking/test/browser/browser_flushOnQuery.js
+@@ -103,6 +103,35 @@ add_task(async function flush_on_query_reflects_live_tab() {
+   await TrackingDBService.clearAll();
+ });
+ 
++add_task(async function private_window_events_are_not_persisted() {
++  const countBefore = await queryAllTypes();
++  const privateWin = await BrowserTestUtils.openNewBrowserWindow({
++    private: true,
++  });
++  try {
++    const tab = BrowserTestUtils.addTab(privateWin.gBrowser, TEST_TOP_PAGE);
++    const browser = privateWin.gBrowser.getBrowserForTab(tab);
++    await BrowserTestUtils.browserLoaded(browser);
++    await loadTrackerImage(
++      browser,
++      TEST_3RD_PARTY_DOMAIN_TP + TEST_PATH + "raptor.jpg?private=" + Math.random()
++    );
++
++    const log = JSON.parse(await browser.getContentBlockingLog());
++    is(Object.keys(log).length, 1, "Private tab records a blocked tracker in memory");
++    BrowserTestUtils.removeTab(tab);
++  } finally {
++    await BrowserTestUtils.closeWindow(privateWin);
++  }
++
++  is(
++    await queryAllTypes(),
++    countBefore,
++    "Private-window content-blocking events are not added to persistent ETP counts"
++  );
++  await TrackingDBService.clearAll();
++});
++
+ // Regression test for an early version of the delta-flush logic that tracked
+ // "already reported" at the LogEntry granularity (a per-origin cursor into
+ // mLogs). RecordLogInternal aggregates same-(type, blocked) events onto the

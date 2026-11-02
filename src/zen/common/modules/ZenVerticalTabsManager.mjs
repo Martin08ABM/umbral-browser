@@ -480,7 +480,13 @@ window.gZenVerticalTabsManager = {
             element.hasAttribute("data-extensionid") &&
             Services.prefs.getBoolPref("zen.view.overflow-webext-toolbar", true)
           ) {
-            extensionButtons.push(element);
+            if (
+              document.documentElement.hasAttribute("umbral-browser-chrome")
+            ) {
+              // Umbral keeps extension actions beside the address bar.
+            } else {
+              extensionButtons.push(element);
+            }
           } else {
             normalButtons.push(element);
           }
@@ -644,6 +650,7 @@ window.gZenVerticalTabsManager = {
       gZenUIManager.updateTabsToolbar();
       this.rebuildURLBarMenus();
       appContentNavbarWrapper.style.transition = "";
+      window.gUmbralBrowserChrome?.place();
     } catch (e) {
       console.error(e);
     }

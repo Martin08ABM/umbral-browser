@@ -173,6 +173,20 @@
   }
 }
 
+/* The tab sidebar no longer shows the workspace title. The element stays in
+   the tree so workspace data, renaming and drag targets keep working. */
+#navigator-toolbox zen-workspace > .zen-current-workspace-indicator {
+  display: none !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  pointer-events: none;
+}
+
 /* Mark workspaces indicator */
 .zen-current-workspace-indicator {
   --indicator-gap: calc(var(--toolbarbutton-padding-inner) - 1px);
