@@ -1,0 +1,199 @@
+name: Manual Windows x86_64 test build
+
+on:
+  workflow_dispatch:
+    inputs:
+      display_version:
+        description: Version label for this test build
+        required: true
+        type: string
+        default: 1.0.0-test
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-x86_64:
+    name: Build Windows x86_64 ZIP
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          preinstalled-runtimes: true
+
+      - name: Check runner disk capacity
+        shell: bash
+        run: |
+          set -euo pipefail
+          available_kib="$(df -Pk -- "$GITHUB_WORKSPACE" | awk 'NR == 2 { print $4 }')"
+          printf 'Free disk after cleanup: %s GiB\n' "$((available_kib / 1048576))"
+          if (( available_kib < 41943040 )); then
+            echo 'At least 40 GiB free is required before downloading the browser source and Windows toolchains.' >&2
+            exit 1
+          fi
+
+      - name: Check out Umbral
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get install -y python3 python3-pip python3-launchpadlib dos2unix yasm nasm \
+            build-essential libgtk2.0-dev libpython3-dev m4 uuid libasound2-dev \
+            libcurl4-openssl-dev libdbus-1-dev libdrm-dev libdbus-glib-1-dev \
+            libgtk-3-dev libpulse-dev libx11-xcb-dev libxt-dev xvfb lld llvm \
+            autoconf autoconf2.13 automake bison cabextract curl cmake flex gawk \
+            gcc-multilib git gnupg jq libbz2-dev libexpat1-dev libffi-dev \
+            libncursesw5-dev libsqlite3-dev libssl-dev libtool libucl-dev libxml2-dev \
+            msitools ninja-build openssh-client p7zip-full pkg-config procps \
+            python3-requests python3-toml scons subversion tar unzip uuid-dev wget zip \
+            zlib1g-dev aria2 zstd file
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Configure pinned Umbral build
+        env:
+          DISPLAY_VERSION: ${{ inputs.display_version }}
+        run: npm run surfer -- ci --brand release --display-version "$DISPLAY_VERSION"
+
+      - name: Download pinned Firefox source and build dependencies
+        run: npm run download
+
+      - name: Set up the Windows cross toolchain
+        run: |
+          set -euxo pipefail
+          sudo add-apt-repository -y ppa:savoury1/backports
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y python3-pip autoconf autoconf2.13 \
+            automake bison build-essential cabextract curl cmake flex gawk gcc-multilib \
+            git gnupg jq libbz2-dev libexpat1-dev libffi-dev libncursesw5-dev \
+            libsqlite3-dev libssl-dev libtool libucl-dev libxml2-dev msitools ninja-build \
+            openssh-client p7zip-full pkg-config procps python3-requests python3-toml \
+            scons subversion tar unzip uuid uuid-dev wget zip zlib1g-dev aria2
+          mkdir -p "$HOME/win-cross"
+          aria2c "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/gecko.cache.level-3.toolchains.v3.linux64-wine.latest/artifacts/public/build/wine.tar.zst" -o wine.tar.zst
+          tar --zstd -xf wine.tar.zst -C "$HOME/win-cross"
+          rm wine.tar.zst
+          cd engine
+          ./mach python --virtualenv build taskcluster/scripts/misc/get_vs.py build/vs/vs2026.yaml "$HOME/win-cross/vs2026"
+          test -x "$HOME/win-cross/wine/bin/wine"
+          test -d "$HOME/win-cross/vs2026/VC/Tools/MSVC"
+          test -d "$HOME/win-cross/vs2026/Windows Kits/10/Include"
+          find "$HOME/win-cross/vs2026/Windows Kits/10/Lib" -type d -path '*/um/x64' -print -quit | grep -q .
+
+      - name: Import persistent Umbral sources
+        env:
+          SURFER_COMPAT: x86_64
+          SURFER_PLATFORM: win32
+        run: |
+          . "$HOME/.cargo/env"
+          npm run import -- --verbose
+
+      - name: Bootstrap the Windows build
+        env:
+          SURFER_PLATFORM: win32
+        run: |
+          set -euxo pipefail
+          chmod -R +x "$HOME/win-cross/vs2026" || true
+          npm run bootstrap
+          test -x "$HOME/.mozbuild/clang/bin/clang-cl"
+          clang_lib="$(find "$HOME/.mozbuild/clang/lib/clang" -path '*/lib/windows' -type d -print -quit)"
+          test -n "$clang_lib"
+          printf '\nexport LIB="%s"\n' "$clang_lib" >> configs/common/mozconfig
+
+      - name: Set up Rust and the Windows SDK sources
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rust_channel="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)"
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain "$rust_channel"
+          . "$HOME/.cargo/env"
+          rustup target add x86_64-pc-windows-msvc
+          windows_rs_version="$(cat build/windows/.windows-rs-version)"
+          curl -fsSL https://static.crates.io/crates/cargo-download/cargo-download-0.1.2.crate | tar xz -C /tmp
+          (cd /tmp/cargo-download-0.1.2 && cargo generate-lockfile && cargo update tinyvec --precise 1.12.0)
+          RUSTFLAGS="--cap-lints=allow" cargo install --path /tmp/cargo-download-0.1.2 --locked
+          cd engine
+          cargo download -x "windows=$windows_rs_version"
+          test -d "windows-$windows_rs_version"
+          rustup target list --installed | grep -Fxq x86_64-pc-windows-msvc
+          echo "export MOZ_WINDOWS_RS_DIR=$(pwd)/windows-$windows_rs_version" >> ../configs/common/mozconfig
+
+      - name: Check space for the Windows build
+        shell: bash
+        run: |
+          set -euo pipefail
+          available_kib="$(df -Pk -- "$GITHUB_WORKSPACE" | awk 'NR == 2 { print $4 }')"
+          printf 'Free disk before compilation: %s GiB\n' "$((available_kib / 1048576))"
+          if (( available_kib < 31457280 )); then
+            echo 'At least 30 GiB free is required for the Windows object directory and package.' >&2
+            exit 1
+          fi
+
+      - name: Build Windows x86_64
+        env:
+          SURFER_COMPAT: x86_64
+          SURFER_PLATFORM: win32
+          ZEN_CROSS_COMPILING: 1
+          ZEN_RELEASE: 1
+          ZEN_RELEASE_BRANCH: release
+          ZEN_GA_DISABLE_PGO: 1
+        run: bash .github/workflows/src/release-build.sh
+
+      - name: Package the portable ZIP
+        env:
+          SURFER_COMPAT: x86_64
+          SURFER_PLATFORM: win32
+          ZEN_CROSS_COMPILING: 1
+          ZEN_RELEASE: 1
+          ZEN_GA_DISABLE_PGO: 1
+        run: |
+          set -euxo pipefail
+          available_kib="$(df -Pk -- "$GITHUB_WORKSPACE" | awk 'NR == 2 { print $4 }')"
+          if (( available_kib < 4194304 )); then
+            echo 'At least 4 GiB free is required to package and validate the Windows ZIP.' >&2
+            exit 1
+          fi
+          npm run package
+          package_file="$(find dist -maxdepth 1 -type f -name 'zen-*.win64.zip' -print -quit)"
+          test -n "$package_file"
+          unzip -tq "$package_file"
+          entries="$(unzip -Z1 "$package_file")"
+          exe_path="$(printf '%s\n' "$entries" | awk '$0 ~ /(^|\/)zen\.exe$/ { print; exit }')"
+          xpi_path="$(printf '%s\n' "$entries" | awk '$0 ~ /(^|\/)distribution\/extensions\/uBlock0@raymondhill\.net\.xpi$/ { print; exit }')"
+          printf '%s\n' "$entries" | grep -Eq '(^|\/)browser\/omni\.ja$'
+          test -n "$exe_path"
+          test -n "$xpi_path"
+          unzip -p "$package_file" "$exe_path" > "$RUNNER_TEMP/umbral-zen.exe"
+          unzip -p "$package_file" "$xpi_path" > "$RUNNER_TEMP/umbral-ublock.xpi"
+          file "$RUNNER_TEMP/umbral-zen.exe" | grep -Eq 'PE32\+ executable.*x86-64'
+          unzip -tq "$RUNNER_TEMP/umbral-ublock.xpi"
+          echo '5b74415860456370644bd80f16125e865b0e6c356bb5dfcfb84069967eaa5287  '"$RUNNER_TEMP/umbral-ublock.xpi" | sha256sum -c -
+          xpi_entries="$(unzip -Z1 "$RUNNER_TEMP/umbral-ublock.xpi")"
+          printf '%s\n' "$xpi_entries" | grep -Fxq 'META-INF/mozilla.rsa'
+          printf '%s\n' "$xpi_entries" | grep -Fxq 'META-INF/mozilla.sf'
+          cp "$package_file" umbral-windows-x86_64.zip
+
+      - name: Upload Windows ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: umbral-windows-x86_64
+          path: umbral-windows-x86_64.zip
+          if-no-files-found: error
+          retention-days: 3

@@ -35,7 +35,11 @@
   display: none !important;
 }
 
-/* hide Mozilla services from the app menu */
+/* hide Firefox account entry points */
+#fxa-toolbar-menu-button,
+#appMenu-fxa-status2,
+#appMenu-fxa-separator,
+#PanelUI-fxa-menu,
 #PanelUI-fxa-menu-services,
 #PanelUI-fxa-cta-menu {
   display: none !important;

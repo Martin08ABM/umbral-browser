@@ -1,0 +1,185 @@
+name: Manual macOS Apple Silicon test build
+
+on:
+  workflow_dispatch:
+    inputs:
+      display_version:
+        description: Version label for this test build
+        required: true
+        type: string
+        default: 1.0.0-test
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos-arm64:
+    name: Build macOS ARM64 DMG
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          preinstalled-runtimes: true
+
+      - name: Check runner disk capacity
+        shell: bash
+        run: |
+          set -euo pipefail
+          available_kib="$(df -Pk -- "$GITHUB_WORKSPACE" | awk 'NR == 2 { print $4 }')"
+          printf 'Free disk after cleanup: %s GiB\n' "$((available_kib / 1048576))"
+          if (( available_kib < 41943040 )); then
+            echo 'At least 40 GiB free is required before downloading the browser source and Apple toolchains.' >&2
+            exit 1
+          fi
+
+      - name: Check out Umbral
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip zstd yasm nasm build-essential file p7zip-full \
+            libgtk2.0-dev libpython3-dev m4 uuid libasound2-dev libcurl4-openssl-dev \
+            libdbus-1-dev libdrm-dev libdbus-glib-1-dev libgtk-3-dev libpulse-dev \
+            libx11-xcb-dev libxt-dev xvfb
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Configure pinned Umbral build
+        env:
+          DISPLAY_VERSION: ${{ inputs.display_version }}
+        run: npm run surfer -- ci --brand release --display-version "$DISPLAY_VERSION"
+
+      - name: Download pinned Firefox source and build dependencies
+        run: npm run download
+
+      - name: Set up macOS cross-packaging tools
+        run: |
+          set -euxo pipefail
+          cd engine
+          ./mach artifact toolchain --from-build linux64-cctools-port linux64-libdmg linux64-hfsplus
+          mkdir -p "$HOME/mac-cross"
+          mv cctools dmg hfsplus "$HOME/mac-cross/"
+          test -x "$HOME/mac-cross/cctools/bin/aarch64-apple-darwin-ld"
+          test -x "$HOME/mac-cross/dmg/dmg"
+          test -x "$HOME/mac-cross/hfsplus/newfs_hfs"
+          test -x "$HOME/mac-cross/dmg/hfsplus"
+
+      - name: Set up Rust for Apple Silicon
+        run: |
+          set -euxo pipefail
+          rust_channel="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)"
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain "$rust_channel"
+          . "$HOME/.cargo/env"
+          rustup target add aarch64-apple-darwin
+          rustup target list --installed | grep -Fxq aarch64-apple-darwin
+
+      - name: Import persistent Umbral sources
+        env:
+          SURFER_COMPAT: aarch64
+          SURFER_PLATFORM: darwin
+        run: |
+          . "$HOME/.cargo/env"
+          npm run import -- --verbose
+
+      - name: Bootstrap the macOS ARM64 build
+        env:
+          SURFER_PLATFORM: darwin
+        run: |
+          set -euxo pipefail
+          npm run bootstrap
+          test -x "$HOME/.mozbuild/clang/bin/clang"
+
+      - name: Build language packs
+        run: sh scripts/download-language-packs.sh
+
+      - name: Check space for the macOS ARM64 build
+        shell: bash
+        run: |
+          set -euo pipefail
+          available_kib="$(df -Pk -- "$GITHUB_WORKSPACE" | awk 'NR == 2 { print $4 }')"
+          printf 'Free disk before compilation: %s GiB\n' "$((available_kib / 1048576))"
+          if (( available_kib < 31457280 )); then
+            echo 'At least 30 GiB free is required for the macOS ARM64 object directory and package.' >&2
+            exit 1
+          fi
+
+      - name: Build macOS ARM64
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+          SURFER_COMPAT: aarch64
+          SURFER_PLATFORM: darwin
+          ZEN_CROSS_COMPILING: 1
+          ZEN_RELEASE: 1
+          ZEN_RELEASE_BRANCH: release
+          ZEN_GA_DISABLE_PGO: 1
+        run: bash .github/workflows/src/release-build.sh
+
+      - name: Verify the configured macOS SDK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sdk_dir="$(find "$HOME/.mozbuild" -maxdepth 5 -type d -name 'MacOSX*.sdk' -print -quit)"
+          test -n "$sdk_dir"
+          printf 'Build used macOS SDK from: %s\n' "$sdk_dir"
+
+      - name: Package the Apple Silicon app
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+          SURFER_COMPAT: aarch64
+          SURFER_PLATFORM: darwin
+          ZEN_CROSS_COMPILING: 1
+          ZEN_RELEASE: 1
+          ZEN_GA_DISABLE_PGO: 1
+        run: |
+          set -euxo pipefail
+          available_kib="$(df -Pk -- "$GITHUB_WORKSPACE" | awk 'NR == 2 { print $4 }')"
+          if (( available_kib < 4194304 )); then
+            echo 'At least 4 GiB free is required to package and validate the macOS DMG.' >&2
+            exit 1
+          fi
+          npm run package
+          package_file="$(find dist -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          test -n "$package_file"
+          7z t "$package_file"
+          verification_dir="$RUNNER_TEMP/umbral-dmg-check"
+          mkdir -p "$verification_dir"
+          7z x "$package_file" -o"$verification_dir" -y >/dev/null
+          app_bundle="$(find "$verification_dir" -type d -name 'Umbral.app' -print -quit)"
+          test -n "$app_bundle"
+          executable="$(find "$app_bundle" -type f -path '*/Contents/MacOS/zen' -print -quit)"
+          test -n "$executable"
+          file "$executable" | grep -Eq 'Mach-O 64-bit arm64 executable'
+          xpi_path="$(find "$app_bundle" -type f -path '*/distribution/extensions/uBlock0@raymondhill.net.xpi' -print -quit)"
+          test -n "$xpi_path"
+          unzip -tq "$xpi_path"
+          echo '5b74415860456370644bd80f16125e865b0e6c356bb5dfcfb84069967eaa5287  '"$xpi_path" | sha256sum -c -
+          xpi_entries="$(unzip -Z1 "$xpi_path")"
+          printf '%s\n' "$xpi_entries" | grep -Fxq 'META-INF/mozilla.rsa'
+          printf '%s\n' "$xpi_entries" | grep -Fxq 'META-INF/mozilla.sf'
+          find "$app_bundle" -type f -iname '*.icns' -print -quit | grep -q .
+          cp "$package_file" umbral-macos-arm64.dmg
+
+      - name: Upload macOS ARM64 DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: umbral-macos-arm64
+          path: umbral-macos-arm64.dmg
+          if-no-files-found: error
+          retention-days: 3

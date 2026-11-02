@@ -8,6 +8,9 @@
 - name: browser.contentblocking.category
   value: strict
 
+- name: identity.fxaccounts.enabled
+  value: false
+
 - name: browser.sessionstore.restore_pinned_tabs_on_demand
   value: true
 
