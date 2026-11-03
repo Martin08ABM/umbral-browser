@@ -95,6 +95,52 @@ Open **Umbral Browser** from the desktop application menu. It launches with `~/.
 
 The executable is named `zen` by the inherited build configuration; its product name and packaged application icon are Umbral.
 
+## Linux x86_64: manual Flatpak bundle
+
+The Flatpak uses the separate application ID `io.github.martin08abm.umbralbrowser`. Flatpak keeps its writable app data below `~/.var/app/io.github.martin08abm.umbralbrowser`; the launcher also selects a profile under that app’s private data directory. It does not read or reuse Zen or Firefox profiles. The bundle reuses the already-built Linux archive, including Umbral’s homepage, SearXNG setup, ETP settings and statistics, and the original signed uBlock Origin XPI. The archive and bundle can be generated from the same build, so `.tar.xz` remains available as the host-integrated alternative.
+
+Install Flatpak and `flatpak-builder` from your Linux distribution. Configure the Flathub remote and install the SDK, runtime, and Firefox BaseApp used by Zen’s manifest:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.freedesktop.Sdk//25.08 org.freedesktop.Platform//25.08 org.mozilla.firefox.BaseApp//25.08
+```
+
+Then build the current sources from the repository root:
+
+```sh
+npm run import
+SURFER_PLATFORM=linux SURFER_COMPAT=x86_64 MOZ_PURGE_CACHES=1 npm run build
+SURFER_PLATFORM=linux SURFER_COMPAT=x86_64 npm run package
+archive_file="$(find dist -maxdepth 1 -type f -name 'zen-*.tar.xz' -printf '%T@ %p\n' | sort -nr | sed -n '1s/^[^ ]* //p')"
+test -n "$archive_file"
+bash scripts/build-flatpak.sh "$archive_file"
+```
+
+The helper checks the archive contains the browser package and uBlock XPI and that its `zen` executable is a 64-bit x86_64 ELF. It then creates a local Flatpak repository and `dist/umbral-linux-x86_64.flatpak`. It does not publish the bundle. Building requires the Freedesktop 25.08 SDK/runtime and Mozilla Firefox BaseApp 25.08. The output is a single-file application bundle, not a self-contained runtime bundle; installing it needs access to the runtime and BaseApp. The bundle records Flathub as the runtime source, but Umbral itself is not submitted to Flathub.
+
+On another computer, install the required runtime and BaseApp, then the local bundle:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.freedesktop.Platform//25.08 org.mozilla.firefox.BaseApp//25.08
+flatpak install --user dist/umbral-linux-x86_64.flatpak
+```
+
+Launch Umbral from the desktop menu or with `flatpak run io.github.martin08abm.umbralbrowser`. Uninstall the application while preserving its profile and settings with:
+
+```sh
+flatpak uninstall --user io.github.martin08abm.umbralbrowser
+```
+
+To also erase only Umbral’s private Flatpak data, including its profile, add `--delete-data` to that uninstall command.
+
+The manifest grants network access, audio, Wayland and fallback X11 sockets, DRI for graphics acceleration, and write access to `xdg-download`. It does not grant broad home-directory access. Like [Zen’s manifest](https://github.com/zen-browser/desktop/blob/dev/build/flatpak/app.zen_browser.zen.yml.template), it includes `--allow=devel`; [Flatpak documents](https://docs.flatpak.org/en/latest/flatpak-command-reference.html) that this allows additional syscalls such as `ptrace()` and `perf_event_open()`. That is a security tradeoff, and this build has not shown that the permission is necessary. The Firefox content-process sandbox and whether Umbral can run without this permission still need runtime verification. [Flatpak portals](https://docs.flatpak.org/en/latest/sandbox-permissions.html#portals) are the intended route for file selection and grant access to chosen files; GTK can use them transparently, but the Firefox file picker has not yet been checked on GNOME/KDE portals. Downloads, Wayland/X11 selection, GPU acceleration, audio, and portal file access have not been exercised in this package.
+
+uBlock Origin remains its original signed extension. The package contains its signed XPI; Firefox AddonManager remains responsible for extension updates and needs network access. Update behavior in Flatpak has not yet been tested. Extensions that rely on a host-side native messaging application, including some password-manager integrations, may not work: the sandbox cannot freely launch or inspect arbitrary host programs. Such integration requires a Flatpak-aware native host and explicit, narrowly scoped permissions; this manifest does not add those permissions.
+
+The package copies the browser distribution and its existing notices unchanged. The project remains MPL-2.0; Mozilla/Firefox and Zen notices remain with their components, and uBlock Origin retains its upstream GPL-3.0-only license and attribution in the signed XPI. Flatpak metadata identifies the app license as MPL-2.0. No runtime compatibility test, package build, or installation has been performed for this new manifest yet.
+
 ## Windows x86_64: portable ZIP artifact
 
 1. Open [Actions](https://github.com/Martin08ABM/umbral-browser/actions) in the Umbral repository.

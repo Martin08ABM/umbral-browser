@@ -1,0 +1,1109 @@
+[
+  {
+    "phase": "uninterrupted-fresh-0",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 15.89,
+        "rssMiB": 447.5,
+        "pssMiB": 352.6
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.01,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.01,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.1,
+        "rssMiB": 107.6,
+        "pssMiB": 29.6
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.04,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.35,
+        "rssMiB": 121.3,
+        "pssMiB": 36.7
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 18.41,
+        "rssMiB": 322.6,
+        "pssMiB": 238.5
+      }
+    ],
+    "cpuPercent": 34.81,
+    "rssMiB": 1154.7,
+    "pssMiB": 688.8
+  },
+  {
+    "phase": "uninterrupted-fresh-1",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 18.2,
+        "rssMiB": 608.8,
+        "pssMiB": 513.6
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.01,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.01,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.2,
+        "pssMiB": 28.3
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.0,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.08,
+        "rssMiB": 120.6,
+        "pssMiB": 36.0
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 26.58,
+        "rssMiB": 680.3,
+        "pssMiB": 596.6
+      }
+    ],
+    "cpuPercent": 44.91,
+    "rssMiB": 1915.6,
+    "pssMiB": 1258.3
+  },
+  {
+    "phase": "uninterrupted-fresh-2",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 26.43,
+        "rssMiB": 641.9,
+        "pssMiB": 546.7
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.04,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.01,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.01,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.04,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.04,
+        "rssMiB": 106.2,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.01,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.06,
+        "rssMiB": 120.5,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 25.69,
+        "rssMiB": 1236.8,
+        "pssMiB": 1153.0
+      }
+    ],
+    "cpuPercent": 52.33,
+    "rssMiB": 2505.2,
+    "pssMiB": 1847.7
+  },
+  {
+    "phase": "uninterrupted-fresh-3",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 21.45,
+        "rssMiB": 477.0,
+        "pssMiB": 381.7
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.2,
+        "pssMiB": 28.3
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.9
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 4.47,
+        "rssMiB": 364.6,
+        "pssMiB": 280.8
+      }
+    ],
+    "cpuPercent": 25.95,
+    "rssMiB": 1468.2,
+    "pssMiB": 810.5
+  },
+  {
+    "phase": "uninterrupted-fresh-4",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 1.74,
+        "rssMiB": 450.8,
+        "pssMiB": 355.6
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.2,
+        "pssMiB": 28.3
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.9
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.0,
+        "rssMiB": 364.6,
+        "pssMiB": 280.9
+      }
+    ],
+    "cpuPercent": 1.77,
+    "rssMiB": 1442.0,
+    "pssMiB": 784.5
+  },
+  {
+    "phase": "uninterrupted-fresh-5",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 23.19,
+        "rssMiB": 421.5,
+        "pssMiB": 326.1
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.03,
+        "rssMiB": 365.2,
+        "pssMiB": 281.3
+      }
+    ],
+    "cpuPercent": 23.25,
+    "rssMiB": 1413.5,
+    "pssMiB": 755.4
+  },
+  {
+    "phase": "uninterrupted-fresh-6",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 2.12,
+        "rssMiB": 396.4,
+        "pssMiB": 301.1
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.0,
+        "rssMiB": 365.2,
+        "pssMiB": 281.3
+      }
+    ],
+    "cpuPercent": 2.15,
+    "rssMiB": 1388.4,
+    "pssMiB": 730.4
+  },
+  {
+    "phase": "uninterrupted-fresh-7",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 2.15,
+        "rssMiB": 411.7,
+        "pssMiB": 316.4
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.08,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.01,
+        "rssMiB": 365.2,
+        "pssMiB": 281.4
+      }
+    ],
+    "cpuPercent": 2.27,
+    "rssMiB": 1403.7,
+    "pssMiB": 745.8
+  },
+  {
+    "phase": "uninterrupted-fresh-8",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 8.95,
+        "rssMiB": 393.3,
+        "pssMiB": 298.0
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 26.39,
+        "rssMiB": 233.5,
+        "pssMiB": 149.7
+      }
+    ],
+    "cpuPercent": 35.37,
+    "rssMiB": 1253.6,
+    "pssMiB": 595.7
+  },
+  {
+    "phase": "uninterrupted-fresh-9",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 0.09,
+        "rssMiB": 391.8,
+        "pssMiB": 296.4
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.01,
+        "rssMiB": 232.4,
+        "pssMiB": 148.5
+      }
+    ],
+    "cpuPercent": 0.13,
+    "rssMiB": 1251.0,
+    "pssMiB": 592.9
+  },
+  {
+    "phase": "uninterrupted-fresh-10",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 0.1,
+        "rssMiB": 391.1,
+        "pssMiB": 295.8
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.0,
+        "rssMiB": 232.4,
+        "pssMiB": 148.5
+      }
+    ],
+    "cpuPercent": 0.13,
+    "rssMiB": 1250.3,
+    "pssMiB": 592.3
+  },
+  {
+    "phase": "uninterrupted-fresh-11",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 2.62,
+        "rssMiB": 390.1,
+        "pssMiB": 294.7
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.0,
+        "rssMiB": 232.4,
+        "pssMiB": 148.5
+      }
+    ],
+    "cpuPercent": 2.65,
+    "rssMiB": 1249.3,
+    "pssMiB": 591.2
+  },
+  {
+    "phase": "uninterrupted-fresh-12",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 0.1,
+        "rssMiB": 390.1,
+        "pssMiB": 294.8
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.04,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.01,
+        "rssMiB": 231.4,
+        "pssMiB": 147.5
+      }
+    ],
+    "cpuPercent": 0.15,
+    "rssMiB": 1248.3,
+    "pssMiB": 590.3
+  },
+  {
+    "phase": "uninterrupted-fresh-13",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 0.1,
+        "rssMiB": 390.1,
+        "pssMiB": 294.8
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.0,
+        "rssMiB": 231.4,
+        "pssMiB": 147.5
+      }
+    ],
+    "cpuPercent": 0.13,
+    "rssMiB": 1248.3,
+    "pssMiB": 590.3
+  },
+  {
+    "phase": "uninterrupted-fresh-14",
+    "seconds": 10.01,
+    "processes": [
+      {
+        "type": "browser",
+        "cpuPercent": 0.58,
+        "rssMiB": 391.4,
+        "pssMiB": 296.1
+      },
+      {
+        "type": "rdd",
+        "cpuPercent": 0.0,
+        "rssMiB": 42.5,
+        "pssMiB": 9.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "socket",
+        "cpuPercent": 0.0,
+        "rssMiB": 47.1,
+        "pssMiB": 14.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 82.0,
+        "pssMiB": 18.1
+      },
+      {
+        "type": "utility",
+        "cpuPercent": 0.0,
+        "rssMiB": 31.6,
+        "pssMiB": 4.4
+      },
+      {
+        "type": "web",
+        "cpuPercent": 0.03,
+        "rssMiB": 106.4,
+        "pssMiB": 28.4
+      },
+      {
+        "type": "forkServer",
+        "cpuPercent": 0.0,
+        "rssMiB": 34.5,
+        "pssMiB": 4.0
+      },
+      {
+        "type": "preallocated",
+        "cpuPercent": 0.0,
+        "rssMiB": 80.1,
+        "pssMiB": 16.2
+      },
+      {
+        "type": "privilegedabout",
+        "cpuPercent": 0.0,
+        "rssMiB": 120.6,
+        "pssMiB": 35.8
+      },
+      {
+        "type": "extension",
+        "cpuPercent": 0.0,
+        "rssMiB": 231.4,
+        "pssMiB": 147.5
+      }
+    ],
+    "cpuPercent": 0.61,
+    "rssMiB": 1249.6,
+    "pssMiB": 591.6
+  }
+]

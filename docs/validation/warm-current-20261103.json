@@ -1,0 +1,67 @@
+{
+  "binary": "current dist/bin/zen",
+  "repeats": 3,
+  "conditions": {
+    "headless": true,
+    "profile": "copy of settled fixture",
+    "template": "dedicated settled temporary fixture, never a personal profile",
+    "page": "about:home",
+    "settleSeconds": 10.0,
+    "idleSeconds": 10.0
+  },
+  "runs": [
+    {
+      "run": 1,
+      "startup_cpu_s": 2.71,
+      "navigation_cpu_percent_one_core": 195.55,
+      "startup_to_home_s": 1.325,
+      "idle_rss_mib": 1297.7,
+      "idle_pss_mib": 641.8,
+      "idle_cpu_percent_one_core": 0.3,
+      "nav_data_page_s": [
+        0.075,
+        0.025,
+        0.03
+      ],
+      "nav_rss_mib": 1321.8
+    },
+    {
+      "run": 2,
+      "startup_cpu_s": 2.5,
+      "navigation_cpu_percent_one_core": 193.92,
+      "startup_to_home_s": 1.24,
+      "idle_rss_mib": 1290.2,
+      "idle_pss_mib": 635.3,
+      "idle_cpu_percent_one_core": 0.6,
+      "nav_data_page_s": [
+        0.069,
+        0.028,
+        0.021
+      ],
+      "nav_rss_mib": 1314.0
+    },
+    {
+      "run": 3,
+      "startup_cpu_s": 2.66,
+      "navigation_cpu_percent_one_core": 191.59,
+      "startup_to_home_s": 1.283,
+      "idle_rss_mib": 1290.3,
+      "idle_pss_mib": 638.9,
+      "idle_cpu_percent_one_core": 0.7,
+      "nav_data_page_s": [
+        0.068,
+        0.027,
+        0.024
+      ],
+      "nav_rss_mib": 1312.9
+    }
+  ],
+  "median": {
+    "startup_to_home_s": 1.283,
+    "idle_pss_mib": 638.9,
+    "idle_rss_mib": 1290.3,
+    "idle_cpu_percent_one_core": 0.6,
+    "nav_data_page_s": 0.03966666666666667,
+    "nav_rss_mib": 1314.0
+  }
+}

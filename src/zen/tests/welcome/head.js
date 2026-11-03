@@ -2,24 +2,40 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-async function goNextWelcomePage(l10nId) {
-  /* eslint-disable-next-line no-async-promise-executor */
-  await new Promise(async resolve => {
-    const button = document.querySelector(
-      `#zen-welcome-page-sidebar-buttons button[data-l10n-id="${l10nId}"]`
-    );
-    if (!button) {
-      throw new Error(`Button with l10n-id "${l10nId}" not found`);
-    }
-    await EventUtils.synthesizeMouseAtCenter(button, {});
-    setTimeout(() => {
-      setTimeout(() => {
-        resolve();
-      }, 0);
-    }, 800); // Wait for the transition to complete
-  });
+function currentPageContent() {
+  return document.querySelector(
+    "#zen-welcome-page-content > .zen-welcome-page:not([exiting])"
+  );
 }
 
-async function waitForFocus(...args) {
-  await new Promise(resolve => SimpleTest.waitForFocus(resolve, ...args));
+async function waitForWelcomePage(page) {
+  await TestUtils.waitForCondition(
+    () => currentPageContent()?.getAttribute("page") === page,
+    `the ${page} welcome step is visible`
+  );
+}
+
+async function clickWelcomeButton(l10nId, nextPage = null) {
+  const previousPage = currentPageContent()?.getAttribute("page");
+  const button = document.querySelector(
+    `#zen-welcome-page-buttons button[data-l10n-id="${l10nId}"]`
+  );
+  if (!button) {
+    throw new Error(`Button with l10n-id "${l10nId}" not found`);
+  }
+  await TestUtils.waitForCondition(
+    () => button.isConnected && !button.disabled,
+    `the ${l10nId} welcome button is ready`
+  );
+  button.click();
+  if (nextPage) {
+    await waitForWelcomePage(nextPage);
+  } else {
+    await TestUtils.waitForCondition(
+      () =>
+        !document.getElementById("zen-welcome") ||
+        currentPageContent()?.getAttribute("page") !== previousPage,
+      "the welcome step changed"
+    );
+  }
 }

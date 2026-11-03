@@ -1,0 +1,45 @@
+[Thread: t-9 (GeckoMain, WebExtensions) | View: Full profile | Full: 15.734s]
+
+Functions in thread t-9 (WebExtensions) — 1 functions (filtered from 2343)
+
+Note: active samples only (idle excluded) — use --include-idle to include idle samples.
+
+Filters: search: "compileFilters"
+
+Functions (by self time):
+  f-4877. Extension "Form Autofill" (ID: formautofill@mozilla.org)!µb.compileFilters - self: 9 (0.4%), total: 645 (27.6%)
+
+Use --search <term>, --min-self <percent>, or --limit <N> (0 = no limit) to filter functions, or f-<N> handles to inspect individual functions.
+[Thread: t-9 (GeckoMain, WebExtensions) | View: Full profile | Full: 15.734s]
+
+Functions in thread t-9 (WebExtensions) — 9 functions (filtered from 2343)
+
+Note: active samples only (idle excluded) — use --include-idle to include idle samples.
+
+Filters: search: "fromCompiled"
+
+Functions (by self time):
+  f-6354. Extension "Form Autofill" (ID: formautofill@mozilla.org)!StaticNetFilteringEngine.prototype.fromCompiled - self: 198 (8.5%), total: 659 (28.2%)
+  f-6366. Extension "Form Autofill" (ID: formautofill@mozilla.org)!CosmeticFilteringEngine.prototype.fromCompiledContent - self: 8 (0.3%), total: 73 (3.1%)
+  f-6390. Extension "Form Autofill" (ID: formautofill@mozilla.org)!fromCompiledContent - self: 5 (0.2%), total: 67 (2.9%)
+  f-6803. Extension "Form Autofill" (ID: formautofill@mozilla.org)!filterFromCompiled - self: 2 (0.1%), total: 17 (0.7%)
+  f-6821. Extension "Form Autofill" (ID: formautofill@mozilla.org)!fromCompiled - self: 1 (0.0%), total: 10 (0.4%)
+  f-6458. Extension "Form Autofill" (ID: formautofill@mozilla.org)!htmlFilteringEngine.fromCompiledContent - self: 1 (0.0%), total: 9 (0.4%)
+  f-6365. Extension "Form Autofill" (ID: formautofill@mozilla.org)!staticExtFilteringEngine.fromCompiledContent - self: 0 (0.0%), total: 149 (6.4%)
+  f-6804. Extension "Form Autofill" (ID: formautofill@mozilla.org)!fromCompiled - self: 0 (0.0%), total: 11 (0.5%)
+  f-6852. Extension "Form Autofill" (ID: formautofill@mozilla.org)!fromCompiled - self: 0 (0.0%), total: 2 (0.1%)
+
+Use --search <term>, --min-self <percent>, or --limit <N> (0 = no limit) to filter functions, or f-<N> handles to inspect individual functions.
+[Thread: t-9 (GeckoMain, WebExtensions) | View: Full profile | Full: 15.734s]
+
+Functions in thread t-9 (WebExtensions) — 2 functions (filtered from 2343)
+
+Note: active samples only (idle excluded) — use --include-idle to include idle samples.
+
+Filters: search: "assetCache"
+
+Functions (by self time):
+  f-4736. Extension "Form Autofill" (ID: formautofill@mozilla.org)!assetCacheWrite - self: 0 (0.0%), total: 909 (38.8%)
+  f-5673. Extension "Form Autofill" (ID: formautofill@mozilla.org)!saveAssetCacheRegistry - self: 0 (0.0%), total: 1 (0.0%)
+
+Use --search <term>, --min-self <percent>, or --limit <N> (0 = no limit) to filter functions, or f-<N> handles to inspect individual functions.

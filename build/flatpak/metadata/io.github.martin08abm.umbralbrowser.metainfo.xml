@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.martin08abm.umbralbrowser</id>
+  <name>Umbral Browser</name>
+  <summary>A focused, privacy-minded browser built on Zen Browser and Firefox</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MPL-2.0</project_license>
+  <description>
+    <p>Umbral is an independent browser project with a clean, customizable interface and privacy-minded defaults. It includes the Umbral homepage, Firefox Enhanced Tracking Protection, the original signed uBlock Origin extension, and configurable search including user-provided SearXNG instances.</p>
+    <p>Privacy statistics show Firefox ETP-classified records for the last seven UTC dates. They are not advertisements or uBlock Origin block counts.</p>
+  </description>
+  <launchable type="desktop-id">io.github.martin08abm.umbralbrowser.desktop</launchable>
+  <url type="homepage">https://github.com/Martin08ABM/umbral-browser</url>
+  <url type="bugtracker">https://github.com/Martin08ABM/umbral-browser/issues</url>
+  <developer id="io.github.martin08abm">
+    <name>Umbral Browser contributors</name>
+  </developer>
+</component>

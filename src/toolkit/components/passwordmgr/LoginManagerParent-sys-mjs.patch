@@ -1,0 +1,33 @@
+diff --git a/toolkit/components/passwordmgr/LoginManagerParent.sys.mjs b/toolkit/components/passwordmgr/LoginManagerParent.sys.mjs
+index 656968da0a..608c9207a0 100644
+--- a/toolkit/components/passwordmgr/LoginManagerParent.sys.mjs
++++ b/toolkit/components/passwordmgr/LoginManagerParent.sys.mjs
+@@ -1146,6 +1146,17 @@ export class LoginManagerParent extends JSWindowActorParent {
+       existingLogin = this.#findSameLogin(logins, formLogin);
+     }
+ 
++    if (!Services.prefs.getBoolPref("umbral.passwords.offerToSave", true)) {
++      if (
++        existingLogin &&
++        existingLogin.password === formLogin.password &&
++        (existingLogin.username || !formLogin.username)
++      ) {
++        await recordLoginUse(existingLogin);
++      }
++      return;
++    }
++
+     const prompter = this._getPrompter(browser);
+ 
+     if (!canMatchExistingLogin) {
+@@ -1239,6 +1250,10 @@ export class LoginManagerParent extends JSWindowActorParent {
+       `_onPasswordEditedOrGenerated: triggeredByFillingGenerated: ${triggeredByFillingGenerated}.`
+     );
+ 
++    if (!Services.prefs.getBoolPref("umbral.passwords.offerToSave", true)) {
++      return;
++    }
++
+     // If password storage is disabled, bail out.
+     if (!lazy.LoginHelper.storageEnabled) {
+       return;

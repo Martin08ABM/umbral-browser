@@ -9,11 +9,10 @@ ChromeUtils.defineESModuleGetters(lazy, {
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
 });
 
-/* eslint-disable mozilla/no-arbitrary-setTimeout */
-
-function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+const { DefaultBrowserHelper } = ChromeUtils.importESModule(
+  "chrome://browser/content/preferences/DefaultBrowserHelper.mjs",
+  { global: "current" }
+);
 
 function currentPageContent() {
   return document.querySelector(
@@ -21,209 +20,288 @@ function currentPageContent() {
   );
 }
 
-add_task(async function test_Welcome_Steps() {
-  const selectedTab = gBrowser.selectedTab;
-  await wait(2000); // Give tons of time for the welcome start button to be clicked
-  await waitForFocus();
-  await EventUtils.synthesizeMouseAtCenter(
+add_task(async function test_UmbralWelcomeFlow() {
+  Assert.ok(
+    !Services.prefs
+      .getDefaultBranch("")
+      .getBoolPref("zen.welcome-screen.seen", false),
+    "Fresh profiles should show the welcome screen by default"
+  );
+  Assert.ok(document.getElementById("zen-welcome"), "Welcome is visible");
+  Assert.ok(
+    document.querySelector("#zen-welcome-start .umbral-welcome-logo"),
+    "The landing step uses an Umbral logo"
+  );
+
+  await TestUtils.waitForCondition(() => {
+    const button = document.getElementById("zen-welcome-start-button");
+    return button && Number(getComputedStyle(button).opacity) > 0.99;
+  }, "the start button is ready");
+  EventUtils.synthesizeMouseAtCenter(
     document.getElementById("zen-welcome-start-button"),
     {}
   );
-  await wait(1500); // Wait for the transition to complete
-  ok(true, "Welcome start button clicked successfully");
-  Assert.notEqual(
-    window.windowState,
-    window.STATE_MAXIMIZED,
-    "Window should not be maximized by the welcome screen"
-  );
-
-  const backButton = document.getElementById("zen-welcome-back");
-  ok(
-    backButton.hasAttribute("disabled"),
-    "Back button should be hidden on the first page"
+  await waitForWelcomePage("search");
+  Assert.equal(
+    document.querySelectorAll("#zen-welcome-stepper li").length,
+    4,
+    "The setup has four steps"
   );
   Assert.equal(
-    currentPageContent().querySelectorAll(".zen-welcome-option").length,
-    2,
-    "Import page should offer two options"
+    document.querySelector('#zen-welcome-stepper li[aria-current="step"]')
+      .dataset.l10nId,
+    "zen-welcome-step-search",
+    "Search is the second step"
   );
-
-  await goNextWelcomePage("zen-generic-next");
-  ok(true, "Welcome Import Step Test Finished");
-
-  ok(
-    !backButton.hasAttribute("disabled"),
-    "Back button should be visible after the first page"
-  );
-  await EventUtils.synthesizeMouseAtCenter(backButton, {});
-  await wait(800);
-  ok(
-    backButton.hasAttribute("disabled"),
-    "Going back should return to the first page"
-  );
-  await goNextWelcomePage("zen-generic-next");
-
-  await goNextWelcomePage("zen-generic-next");
-  ok(true, "Welcome Theme Step Test Finished");
-
-  let options = currentPageContent().querySelectorAll(".zen-welcome-option");
-  Assert.greater(
-    options.length,
-    0,
-    "Search page should list the available engines"
-  );
-  ok(
-    currentPageContent().querySelector("#zen-welcome-searxng-url"),
-    "Search page offers an optional SearXNG instance URL"
-  );
-  ok(
-    currentPageContent().querySelector("#zen-welcome-searxng-add"),
-    "Search page requires an explicit Add action before checking an instance"
-  );
-  const defaultSearchEngine = await lazy.SearchService.getDefault();
-  Assert.equal(
-    (await lazy.SearchService.getDefault()).name,
-    defaultSearchEngine.name,
-    "Rendering the SearXNG form does not change the selected default"
-  );
-  for (const option of options) {
-    ok(
-      option.querySelector("img").getAttribute("src").includes("blob:"),
-      "Each engine option should have an image with a blob URL"
-    );
-  }
-
-  await EventUtils.synthesizeMouseAtCenter(options[1], {});
-  await wait(100);
-  let engineName = await lazy.SearchService.getDefault();
-  ok(
-    options[1].querySelector("input").checked,
-    "The selected option should be checked"
-  );
-  Assert.equal(
-    engineName.name,
-    options[1].querySelector(".zen-welcome-option-label").textContent.trim(),
-    "The default search engine should match the selected option"
-  );
-
-  await goNextWelcomePage("zen-generic-next");
-  ok(true, "Welcome Search Step Test Finished");
 
   await TestUtils.waitForCondition(
-    () => currentPageContent()?.getAttribute("page") === "essentials",
-    "the ad blocking page to be skipped when uBlock is unavailable"
+    () => currentPageContent()?.querySelectorAll(".zen-welcome-option").length,
+    "search engines are rendered"
   );
-  ok(true, "Welcome Block Ads Step Test Finished");
+  const searchOptions = currentPageContent().querySelectorAll(
+    ".zen-welcome-search-engines .zen-welcome-option"
+  );
+  Assert.greater(searchOptions.length, 1, "Search alternatives are available");
+  const defaultEngine = await lazy.SearchService.getDefault();
+  Assert.equal(defaultEngine.name, "DuckDuckGo", "DuckDuckGo is the default");
+  Assert.ok(
+    [...searchOptions]
+      .find(option =>
+        option
+          .querySelector(".zen-welcome-option-label")
+          .textContent.includes(defaultEngine.name)
+      )
+      .querySelector("input").checked,
+    "The default engine is selected"
+  );
+  Assert.ok(
+    currentPageContent().querySelector("#zen-welcome-searxng-url"),
+    "The search step offers a SearXNG URL field"
+  );
+  Assert.ok(
+    currentPageContent().querySelector("#zen-welcome-searxng-add"),
+    "SearXNG requires an explicit Add action"
+  );
 
-  const essentials = currentPageContent().querySelectorAll(
-    "#zen-welcome-essentials .zen-welcome-essential"
+  const searchField = currentPageContent().querySelector(
+    "#zen-welcome-searxng-url"
   );
-  Assert.greater(
-    essentials.length,
+  searchField.value = "not a URL";
+  EventUtils.synthesizeMouseAtCenter(
+    currentPageContent().querySelector("#zen-welcome-searxng-add"),
+    {}
+  );
+  Assert.equal(
+    currentPageContent()
+      .querySelector("#zen-welcome-searxng-status")
+      .getAttribute("data-l10n-id"),
+    "zen-welcome-searxng-invalid-url",
+    "An invalid SearXNG address reports an error without contacting it"
+  );
+  Assert.equal(
+    (await lazy.SearchService.getDefault()).name,
+    defaultEngine.name,
+    "SearXNG setup does not change the selected engine"
+  );
+
+  await EventUtils.synthesizeMouseAtCenter(searchOptions[1], {});
+  await TestUtils.waitForCondition(
+    async () =>
+      (await lazy.SearchService.getDefault()).name !== defaultEngine.name,
+    "the selected search engine is applied"
+  );
+  const selectedEngine = await lazy.SearchService.getDefault();
+  Assert.ok(searchOptions[1].querySelector("input").checked);
+  Assert.equal(
+    selectedEngine.name,
+    searchOptions[1]
+      .querySelector(".zen-welcome-option-label")
+      .textContent.trim(),
+    "The chosen search engine matches the checked option"
+  );
+
+  await clickWelcomeButton("zen-welcome-continue", "theme");
+  const themeChoices = currentPageContent().querySelectorAll(
+    ".zen-welcome-option"
+  );
+  Assert.equal(
+    themeChoices.length,
     3,
-    "Welcome page content should have more than 3 essentials"
+    "All three appearance choices are shown"
   );
-  await EventUtils.synthesizeMouseAtCenter(essentials[0], {});
-  await EventUtils.synthesizeMouseAtCenter(essentials[2], {});
-  ok(
-    essentials[0].hasAttribute("selected"),
-    "The first essential should be selected"
+  Assert.ok(
+    currentPageContent().querySelector("#zen-welcome-theme-system").checked,
+    "A new profile starts with the system appearance"
   );
-  ok(
-    !essentials[1].hasAttribute("selected"),
-    "The second essential should not be selected"
-  );
-  ok(
-    essentials[2].hasAttribute("selected"),
-    "The third essential should be selected"
-  );
-  const urlsToCheck = [essentials[0].dataset.url, essentials[2].dataset.url];
-  for (const url of urlsToCheck) {
-    ok(
-      url.startsWith("https://"),
-      `The URL "${url}" should start with "https://"`
+  for (const [mode, expected] of [
+    ["light", 0],
+    ["dark", 1],
+  ]) {
+    const themeInput = currentPageContent().querySelector(
+      `#zen-welcome-theme-${mode}`
+    );
+    themeInput.click();
+    await TestUtils.waitForCondition(
+      () =>
+        Services.prefs.getIntPref("ui.systemUsesDarkTheme", -1) === expected,
+      `${mode} appearance is selected`
+    );
+    Assert.equal(
+      Services.prefs.getIntPref("ui.systemUsesDarkTheme"),
+      expected,
+      `${mode} uses Firefox's existing appearance preference`
+    );
+    const expectedBackground =
+      mode === "light" ? "rgb(244, 244, 245)" : "rgb(17, 18, 20)";
+    await TestUtils.waitForCondition(
+      () =>
+        getComputedStyle(document.getElementById("zen-welcome"))
+          .backgroundColor === expectedBackground,
+      `${mode} welcome colors are applied`
+    );
+    Assert.equal(
+      getComputedStyle(document.getElementById("zen-welcome")).backgroundColor,
+      expectedBackground,
+      `${mode} uses a neutral welcome background`
     );
   }
-
-  await goNextWelcomePage("zen-generic-next");
-  ok(true, "Welcome Essentials Step Test Finished");
-
-  options = currentPageContent().querySelectorAll(".zen-welcome-option");
-  Assert.equal(options.length, 2, "Default browser page should have 2 options");
-  await EventUtils.synthesizeMouseAtCenter(options[0], {});
-  ok(
-    options[0].querySelector("input").checked,
-    "Clicking the option should check its radio"
+  const systemThemeInput = currentPageContent().querySelector(
+    "#zen-welcome-theme-system"
   );
-  // Don't actually change the default browser in the test.
-  await EventUtils.synthesizeMouseAtCenter(options[1], {});
+  systemThemeInput.click();
+  Assert.ok(
+    !Services.prefs.prefHasUserValue("ui.systemUsesDarkTheme"),
+    "System appearance clears the override"
+  );
 
-  await goNextWelcomePage("zen-generic-next");
-  ok(true, "Welcome Default Browser Step Test Finished");
+  document.getElementById("zen-welcome-back").click();
+  await waitForWelcomePage("search");
+  Assert.equal(
+    (await lazy.SearchService.getDefault()).name,
+    selectedEngine.name,
+    "Going back preserves the search choice"
+  );
+  await clickWelcomeButton("zen-welcome-continue", "theme");
+  Assert.ok(
+    currentPageContent().querySelector("#zen-welcome-theme-system").checked,
+    "Returning preserves the system appearance choice"
+  );
 
-  await goNextWelcomePage("zen-welcome-start-browsing");
-  ok(true, "Welcome Finish Step Test Finished");
+  let defaultBrowserSandbox;
+  let setDefaultStub;
+  if (DefaultBrowserHelper.canCheck) {
+    const { sinon } = ChromeUtils.importESModule(
+      "resource://testing-common/Sinon.sys.mjs"
+    );
+    defaultBrowserSandbox = sinon.createSandbox();
+    let isDefault = false;
+    const mockShellService = {
+      isDefaultBrowser: () => isDefault,
+      async setDefaultBrowser() {
+        isDefault = true;
+      },
+    };
+    defaultBrowserSandbox
+      .stub(window, "getShellService")
+      .returns(mockShellService);
+    setDefaultStub = sinon.spy(mockShellService, "setDefaultBrowser");
+  }
 
-  await wait(3000); // Wait for the finish animation to complete
-
-  for (const url of urlsToCheck) {
-    ok(
-      await PlacesUtils.history.hasVisits(url),
-      `The URL "${url}" should have visits in history`
+  await clickWelcomeButton("zen-welcome-continue", "finish");
+  await TestUtils.waitForCondition(
+    () => document.getElementById("zen-welcome-set-default-browser"),
+    "the default-browser action is ready"
+  );
+  Assert.equal(
+    currentPageContent().querySelectorAll(".zen-welcome-summary article")
+      .length,
+    2,
+    "The last step explains privacy protections and containers"
+  );
+  const defaultBrowserButton = document.getElementById(
+    "zen-welcome-set-default-browser"
+  );
+  Assert.ok(
+    defaultBrowserButton,
+    "The final step offers a default-browser action"
+  );
+  const spanish = Services.locale.appLocaleAsBCP47 === "es-ES";
+  Assert.equal(
+    defaultBrowserButton.textContent.trim(),
+    spanish
+      ? "Establecer Umbral como navegador predeterminado"
+      : "Set Umbral as default browser",
+    "The default-browser action is localized"
+  );
+  Assert.equal(
+    document
+      .querySelector(
+        "#zen-welcome-page-buttons button:not(#zen-welcome-set-default-browser)"
+      )
+      .textContent.trim(),
+    spanish ? "Ahora no" : "Not now",
+    "The defer action is localized"
+  );
+  Assert.ok(
+    currentPageContent().querySelector("#zen-welcome-default-browser-status"),
+    "The default-browser state is announced accessibly"
+  );
+  if (DefaultBrowserHelper.canCheck) {
+    defaultBrowserButton.click();
+    await TestUtils.waitForCondition(
+      () =>
+        currentPageContent()
+          .querySelector("#zen-welcome-default-browser-status")
+          ?.getAttribute("data-l10n-id") ===
+        "zen-welcome-default-browser-current",
+      "the UI confirms the default state only after checking it"
+    );
+    Assert.equal(
+      setDefaultStub.callCount,
+      1,
+      "The native setter runs after explicit activation"
+    );
+    Assert.ok(
+      defaultBrowserButton.disabled,
+      "The action is disabled after confirmation"
+    );
+    Assert.equal(
+      defaultBrowserButton.textContent.trim(),
+      spanish
+        ? "Umbral ya es el navegador predeterminado"
+        : "Umbral is already the default browser",
+      "The verified state is localized"
+    );
+    defaultBrowserSandbox.restore();
+  } else {
+    Assert.ok(
+      defaultBrowserButton.disabled,
+      "Unsupported environments disable the action"
+    );
+    Assert.equal(
+      currentPageContent()
+        .querySelector("#zen-welcome-default-browser-status")
+        .getAttribute("data-l10n-id"),
+      "zen-welcome-default-browser-unavailable",
+      "The unsupported environment is explained"
     );
   }
-  Assert.equal(
-    gBrowser._numZenEssentials,
-    2,
-    "There should be 2 Essentials after the welcome process"
+  await clickWelcomeButton("zen-welcome-not-now");
+  await TestUtils.waitForCondition(
+    () => !document.getElementById("zen-welcome"),
+    "the welcome flow closes"
+  );
+  await TestUtils.waitForCondition(
+    () => gBrowser.selectedBrowser.currentURI.spec === "about:home",
+    "the Umbral homepage opens"
+  );
+  Assert.ok(
+    Services.prefs.getBoolPref("zen.welcome-screen.seen"),
+    "Completing the flow records the welcome as seen"
   );
   Assert.equal(
-    gBrowser.tabs.filter(
-      tab => tab.pinned && !tab.hasAttribute("zen-essential")
-    ).length,
-    2,
-    "There should be 2 pinned tabs after the welcome process"
+    (await lazy.SearchService.getDefault()).name,
+    selectedEngine.name,
+    "The selected search engine remains active at completion"
   );
-
-  gBrowser.selectedTab = selectedTab;
-  const groups = gBrowser.tabGroups;
-  Assert.equal(
-    groups.length,
-    1,
-    "There should be one tab group after the welcome process"
-  );
-  const group = groups[0];
-  Assert.equal(
-    group.tabs.length,
-    2,
-    "The first tab group should have 2 tabs after the welcome process"
-  );
-  Assert.equal(
-    group.label,
-    "zen basics",
-    'The first tab group should be labeled "zen basics" after the welcome process'
-  );
-  for (const tab of gBrowser.tabs) {
-    if (tab.hasAttribute("zen-empty-tab")) {
-      continue;
-    }
-    if (tab.pinned && !tab.hasAttribute("zen-essential")) {
-      ok(
-        tab.hasAttribute("zen-workspace-id"),
-        "Pinned tabs should have a zen-workspace-id attribute"
-      );
-      Assert.equal(
-        tab.group,
-        group,
-        "Pinned tabs should belong to the first tab group"
-      );
-    }
-  }
-  group.delete();
-  for (const tab of gBrowser.tabs) {
-    if (tab.pinned) {
-      gBrowser.removeTab(tab);
-    }
-  }
-  ok(true, "Welcome process completed successfully");
 });

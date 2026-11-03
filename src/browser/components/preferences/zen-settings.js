@@ -724,6 +724,224 @@ var gZenLooksAndFeel = {
   },
 };
 
+var gUmbralAISettings = {
+  init() {
+    const root = document.getElementById("umbralAISettings");
+    if (!root || this.initialized) {
+      return;
+    }
+    this.initialized = true;
+    this.endpoint = document.getElementById("umbralAIEndpoint");
+    this.model = document.getElementById("umbralAIModel");
+    this.apiKey = document.getElementById("umbralAIKey");
+    this.clearKey = document.getElementById("umbralAIClearKey");
+    this.enabled = document.getElementById("umbralAIEnabled");
+    this.sendButton = document.getElementById("umbralAISend");
+    this.cancelButton = document.getElementById("umbralAICancel");
+    this.cancelButton.addEventListener("click", () => this.requestAbort?.abort());
+    window.addEventListener("pagehide", () => this.requestAbort?.abort());
+    this.prompt = document.getElementById("umbralAIPrompt");
+    this.conversation = document.getElementById("umbralAIConversation");
+    this.status = document.getElementById("umbralAIChatStatus");
+    this.configStatus = document.getElementById("umbralAIConfigStatus");
+
+    this.endpoint.value = Services.prefs.getStringPref(
+      "umbral.ai.endpoint",
+      ""
+    );
+    this.model.value = Services.prefs.getStringPref("umbral.ai.model", "");
+    this.enabled.checked = Services.prefs.getBoolPref(
+      "umbral.ai.enabled",
+      false
+    );
+
+    document.getElementById("umbralAISave").addEventListener("click", () => {
+      this.saveConfiguration();
+    });
+    this.enabled.addEventListener("command", () => {
+      if (!this.enabled.checked) this.requestAbort?.abort();
+      this.updateAvailability();
+    });
+    this.enabled.addEventListener("change", () => this.updateAvailability());
+    document
+      .getElementById("umbralAIChatForm")
+      .addEventListener("submit", event => this.sendPrompt(event));
+    this.prompt.addEventListener("input", () => this.updateAvailability());
+    for (const input of [this.endpoint, this.model, this.apiKey, this.clearKey]) {
+      input.addEventListener("input", () => this.updateAvailability());
+    }
+    const enabledObserver = () => {
+      this.enabled.checked = Services.prefs.getBoolPref("umbral.ai.enabled", false);
+      if (!this.enabled.checked) this.requestAbort?.abort();
+      this.updateAvailability();
+    };
+    Services.prefs.addObserver("umbral.ai.enabled", enabledObserver);
+    window.addEventListener("unload", () => Services.prefs.removeObserver("umbral.ai.enabled", enabledObserver), { once: true });
+    this.updateAvailability();
+  },
+
+  getEndpoint(value) {
+    let endpoint;
+    try {
+      endpoint = new URL(value);
+    } catch {
+      return null;
+    }
+    const host = endpoint.hostname.toLowerCase();
+    if (
+      !["http:", "https:"].includes(endpoint.protocol) ||
+      !["localhost", "127.0.0.1", "[::1]"].includes(host) ||
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash
+    ) {
+      return null;
+    }
+    endpoint.pathname = endpoint.pathname.replace(/\/+$/, "");
+    return endpoint;
+  },
+
+  updateAvailability() {
+    const endpoint = this.getEndpoint(this.endpoint?.value ?? "");
+    const model = this.model?.value.trim() ?? "";
+    const prompt = this.prompt?.value.trim() ?? "";
+    this.sendButton.disabled =
+      this.busy ||
+      !Services.prefs.getBoolPref("umbral.ai.enabled", false) ||
+      !this.enabled.checked ||
+      !endpoint ||
+      !model ||
+      endpoint.href !== Services.prefs.getStringPref("umbral.ai.endpoint", "") ||
+      model !== Services.prefs.getStringPref("umbral.ai.model", "") ||
+      !!this.apiKey.value ||
+      this.clearKey.checked ||
+      !prompt ||
+      prompt.length > 4000;
+  },
+
+  async saveConfiguration() {
+    const endpoint = this.getEndpoint(this.endpoint.value.trim());
+    const model = this.model.value.trim();
+    if (!endpoint || !model || model.length > 80) {
+      this.configStatus.dataset.l10nId = "umbral-ai-invalid-config";
+      return;
+    }
+
+    try {
+      Services.prefs.setStringPref("umbral.ai.endpoint", endpoint.href);
+      Services.prefs.setStringPref("umbral.ai.model", model);
+      if (this.clearKey.checked) {
+        await this.removeAPIKey();
+      } else if (this.apiKey.value) {
+        await this.saveAPIKey(this.apiKey.value);
+      }
+      Services.prefs.setBoolPref("umbral.ai.enabled", this.enabled.checked);
+      this.apiKey.value = "";
+      this.clearKey.checked = false;
+      this.configStatus.dataset.l10nId = "umbral-ai-config-saved";
+    } catch {
+      this.configStatus.dataset.l10nId = "umbral-ai-config-error";
+    }
+    this.updateAvailability();
+  },
+
+  async saveAPIKey(value) {
+    const LoginInfo = Components.Constructor(
+      "@mozilla.org/login-manager/loginInfo;1",
+      Ci.nsILoginInfo,
+      "init"
+    );
+    const login = new LoginInfo(
+      "chrome://umbral-ai",
+      null,
+      "Umbral local AI",
+      "api-key",
+      value,
+      "",
+      ""
+    );
+    const existing = await Services.logins.searchLoginsAsync({
+      origin: "chrome://umbral-ai",
+      httpRealm: "Umbral local AI",
+    });
+    if (existing.length) {
+      await Services.logins.modifyLoginAsync(existing[0], login);
+    } else {
+      await Services.logins.addLoginAsync(login);
+    }
+  },
+
+  async removeAPIKey() {
+    const logins = await Services.logins.searchLoginsAsync({
+      origin: "chrome://umbral-ai",
+      httpRealm: "Umbral local AI",
+    });
+    for (const login of logins) {
+      await Services.logins.removeLoginAsync(login);
+    }
+  },
+
+  addConversationEntry(text, className) {
+    const entry = document.createElement("p");
+    entry.className = className;
+    entry.textContent = text;
+    this.conversation.append(entry);
+  },
+
+  async sendPrompt(event) {
+    event.preventDefault();
+    const prompt = this.prompt.value.trim();
+    const endpoint = this.getEndpoint(
+      Services.prefs.getStringPref("umbral.ai.endpoint", "")
+    );
+    const model = Services.prefs.getStringPref("umbral.ai.model", "");
+    if (
+      this.busy ||
+      !Services.prefs.getBoolPref("umbral.ai.enabled", false) ||
+      !this.enabled.checked ||
+      !endpoint ||
+      !model ||
+      !prompt ||
+      prompt.length > 4000
+    ) {
+      return;
+    }
+
+    this.busy = true;
+    this.requestAbort = new AbortController();
+    this.cancelButton.hidden = false;
+    this.addConversationEntry(prompt, "umbral-ai-user-message");
+    this.prompt.value = "";
+    this.updateAvailability();
+    this.status.dataset.l10nId = "umbral-ai-request-pending";
+
+    try {
+      const { requestCompletion } = ChromeUtils.importESModule(
+        "chrome://browser/content/UmbralLocalAI.sys.mjs"
+      );
+      const answer = await requestCompletion(prompt, { signal: this.requestAbort.signal });
+      this.addConversationEntry(answer, "umbral-ai-assistant-message");
+      this.status.removeAttribute("data-l10n-id");
+      this.status.textContent = "";
+    } catch (error) {
+      this.status.dataset.l10nId = this.requestAbort.signal.aborted || !Services.prefs.getBoolPref("umbral.ai.enabled", false)
+        ? "umbral-ai-request-cancelled"
+        : error.name === "AbortError"
+          ? "umbral-ai-request-timeout"
+          : error.name === "UmbralLocalAIResponseError"
+            ? "umbral-ai-response-error"
+            : "umbral-ai-request-error";
+    } finally {
+      this.busy = false;
+      this.cancelButton.hidden = true;
+      this.requestAbort = null;
+      this.updateAvailability();
+    }
+  },
+};
+
+
 var gZenWorkspacesSettings = {
   init() {
     var tabsUnloaderPrefListener = {
@@ -1151,6 +1369,7 @@ var gZenCKSSettings = {
 };
 
 Preferences.addAll([
+  { id: "umbral.passwords.offerToSave", type: "bool" },
   {
     id: "zen.view.compact.toolbar-flash-popup",
     type: "bool",

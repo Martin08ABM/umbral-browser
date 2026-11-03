@@ -1,0 +1,35 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+<groupbox id="umbralAISettings" data-category="paneUmbralAI" hidden="true" class="highlighting-group">
+  <label><html:h2 data-l10n-id="umbral-ai-heading" /></label>
+  <html:p data-l10n-id="umbral-ai-description" />
+  <vbox class="umbral-ai-fields">
+    <html:label for="umbralAIEndpoint" data-l10n-id="umbral-ai-endpoint-label" />
+    <html:input id="umbralAIEndpoint" type="url" autocomplete="url" />
+    <html:p class="description-deemphasized" data-l10n-id="umbral-ai-api-help" />
+    <html:label for="umbralAIModel" data-l10n-id="umbral-ai-model-label" />
+    <html:input id="umbralAIModel" type="text" maxlength="80" autocomplete="off" />
+    <html:label for="umbralAIKey" data-l10n-id="umbral-ai-key-label" />
+    <html:input id="umbralAIKey" type="password" maxlength="4096" autocomplete="new-password" />
+    <html:label class="umbral-ai-clear-key">
+      <html:input id="umbralAIClearKey" type="checkbox" />
+      <html:span data-l10n-id="umbral-ai-clear-key" />
+    </html:label>
+    <checkbox id="umbralAIEnabled" data-l10n-id="umbral-ai-enabled" />
+    <button id="umbralAISave" data-l10n-id="umbral-ai-save" />
+    <html:p id="umbralAIConfigStatus" role="status" aria-live="polite" />
+  </vbox>
+  <html:hr />
+  <html:h3 data-l10n-id="umbral-ai-chat-heading" />
+  <html:p data-l10n-id="umbral-ai-chat-privacy" />
+  <vbox id="umbralAIConversation" role="log" aria-live="polite" aria-relevant="additions text" />
+  <html:form id="umbralAIChatForm">
+    <html:label for="umbralAIPrompt" data-l10n-id="umbral-ai-prompt-label" />
+    <html:textarea id="umbralAIPrompt" rows="4" maxlength="4000" autocomplete="off" />
+    <html:button id="umbralAISend" type="submit" data-l10n-id="umbral-ai-send" disabled="true" />
+    <html:button id="umbralAICancel" type="button" data-l10n-id="umbral-ai-cancel" hidden="hidden" />
+    <html:p id="umbralAIChatStatus" role="status" aria-live="polite" />
+  </html:form>
+</groupbox>

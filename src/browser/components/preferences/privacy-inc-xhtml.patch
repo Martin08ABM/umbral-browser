@@ -1,0 +1,26 @@
+diff --git a/browser/components/preferences/privacy.inc.xhtml b/browser/components/preferences/privacy.inc.xhtml
+index 78e2e934cf..8a97d57781 100644
+--- a/browser/components/preferences/privacy.inc.xhtml
++++ b/browser/components/preferences/privacy.inc.xhtml
+@@ -423,13 +423,19 @@
+       <vbox flex="1">
+         <hbox>
+           <checkbox id="savePasswords"
+-                    data-l10n-id="forms-ask-to-save-passwords"
++                    data-l10n-id="umbral-passwords-manager"
+                     preference="signon.rememberSignons"
+                     flex="1" />
+         </hbox>
++        <hbox class="indent" flex="1">
++          <checkbox id="offerToSavePasswords"
++                    data-l10n-id="umbral-passwords-offer"
++                    preference="umbral.passwords.offerToSave"
++                    flex="1" />
++        </hbox>
+         <hbox class="indent" flex="1">
+           <checkbox id="passwordAutofillCheckbox"
+-                    data-l10n-id="forms-fill-usernames-and-passwords"
++                    data-l10n-id="umbral-passwords-autofill"
+                     preference="signon.autofillForms"
+                     flex="1" />
+         </hbox>

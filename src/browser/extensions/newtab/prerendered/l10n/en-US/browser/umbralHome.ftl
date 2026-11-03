@@ -19,3 +19,27 @@ umbral-home-no-data = No data
 umbral-home-ublock-active = Active
 umbral-home-ublock-disabled = Disabled
 umbral-home-ublock-unavailable = Unavailable
+umbral-home-shortcuts = Shortcuts
+umbral-home-shortcut-add = Add shortcut
+umbral-home-shortcut-edit = Edit
+umbral-home-shortcut-name = Name
+umbral-home-shortcut-url = URL
+umbral-home-shortcut-cancel = Cancel
+umbral-home-shortcut-save = Save
+umbral-home-shortcut-invalid-url = Enter an HTTP or HTTPS address without a username or password.
+umbral-home-shortcut-move-up = Move up
+    .aria-label = Move { $name } up
+umbral-home-shortcut-move-down = Move down
+    .aria-label = Move { $name } down
+umbral-home-shortcut-delete = Delete
+    .aria-label = Delete { $name }
+
+umbral-home-shortcut-edit-button = Edit
+    .aria-label = Edit { $name }
+
+umbral-home-shortcuts-empty = Your space for the links you choose. Add your first shortcut.
+umbral-home-shortcut-menu =
+    .aria-label = Actions for { $name }
+    .title = Actions for { $name }
+umbral-home-shortcut-invalid-name = Enter a name of up to 48 characters.
+umbral-home-shortcut-save-error = The shortcut could not be saved. Try again.

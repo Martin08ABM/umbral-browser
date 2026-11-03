@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Umbral Browser
+Comment=Browse with Umbral
+Exec=umbral-launcher %u
+Icon=io.github.martin08abm.umbralbrowser
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=io.github.martin08abm.umbralbrowser

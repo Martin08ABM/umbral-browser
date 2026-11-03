@@ -1,9 +1,9 @@
 diff --git a/browser/extensions/newtab/prerendered/umbral-home.html b/browser/extensions/newtab/prerendered/umbral-home.html
 new file mode 100644
-index 0000000000..a21c0eccc4
+index 0000000000..c87e09e37c
 --- /dev/null
 +++ b/browser/extensions/newtab/prerendered/umbral-home.html
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,118 @@
 +<!doctype html>
 +<!-- This Source Code Form is subject to the terms of the Mozilla Public
 +   - License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,6 +38,34 @@ index 0000000000..a21c0eccc4
 +        alt="Umbral"
 +      />
 +    </main>
++    <section id="umbral-shortcuts" aria-labelledby="umbral-shortcuts-title">
++      <h1 id="umbral-shortcuts-title" data-l10n-id="umbral-home-shortcuts">Shortcuts</h1>
++      <p id="umbral-shortcuts-empty" data-l10n-id="umbral-home-shortcuts-empty">Your space for the links you choose. Add your first shortcut.</p>
++      <ul id="umbral-shortcuts-list">
++        <li id="umbral-shortcuts-add-item" class="shortcut shortcut-add-item">
++          <button id="umbral-shortcuts-add" class="shortcut-link" type="button">
++            <span class="shortcut-icon" aria-hidden="true">+</span>
++            <span class="shortcut-name" data-l10n-id="umbral-home-shortcut-add">Add shortcut</span>
++          </button>
++        </li>
++      </ul>
++      <dialog id="umbral-shortcut-dialog" aria-labelledby="umbral-shortcut-dialog-title">
++        <form id="umbral-shortcut-form" novalidate="novalidate">
++          <h2 id="umbral-shortcut-dialog-title" data-l10n-id="umbral-home-shortcut-add">Add shortcut</h2>
++          <label for="umbral-shortcut-name" data-l10n-id="umbral-home-shortcut-name">Name</label>
++          <input id="umbral-shortcut-name" name="name" maxlength="48" aria-describedby="umbral-shortcut-name-error" required />
++          <p id="umbral-shortcut-name-error" class="field-error" aria-live="polite"></p>
++          <label for="umbral-shortcut-url" data-l10n-id="umbral-home-shortcut-url">URL</label>
++          <input id="umbral-shortcut-url" name="url" type="url" maxlength="2048" aria-describedby="umbral-shortcut-url-error" required />
++          <p id="umbral-shortcut-url-error" class="field-error" aria-live="polite"></p>
++          <p id="umbral-shortcut-error" role="status" aria-live="polite"></p>
++          <div class="shortcut-actions">
++            <button id="umbral-shortcut-cancel" type="button" data-l10n-id="umbral-home-shortcut-cancel">Cancel</button>
++            <button type="submit" data-l10n-id="umbral-home-shortcut-save">Save</button>
++          </div>
++        </form>
++      </dialog>
++    </section>
 +    <section class="cards" data-l10n-id="umbral-home-cards">
 +      <article class="card">
 +        <div class="card-heading">

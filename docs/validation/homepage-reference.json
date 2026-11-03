@@ -1,0 +1,58 @@
+{
+  "binary": "isolated distribution with pre-task homepage assets",
+  "repeats": 3,
+  "conditions": "headless, fresh temporary profiles, about:home and local data pages; 5s idle window",
+  "runs": [
+    {
+      "run": 1,
+      "startup_cpu_s": 4.77,
+      "navigation_cpu_percent_one_core": 214.81,
+      "startup_to_home_s": 2.465,
+      "idle_rss_mib": 1269.2,
+      "idle_cpu_percent_one_core": 6.2,
+      "nav_data_page_s": [
+        0.067,
+        0.03,
+        0.025
+      ],
+      "nav_rss_mib": 1289.0
+    },
+    {
+      "run": 2,
+      "startup_cpu_s": 4.57,
+      "navigation_cpu_percent_one_core": 201.39,
+      "startup_to_home_s": 2.446,
+      "idle_rss_mib": 1266.2,
+      "idle_cpu_percent_one_core": 6.8,
+      "nav_data_page_s": [
+        0.067,
+        0.031,
+        0.024
+      ],
+      "nav_rss_mib": 1289.7
+    },
+    {
+      "run": 3,
+      "startup_cpu_s": 5.59,
+      "navigation_cpu_percent_one_core": 276.53,
+      "startup_to_home_s": 2.669,
+      "idle_rss_mib": 1372.9,
+      "idle_cpu_percent_one_core": 20.2,
+      "nav_data_page_s": [
+        0.062,
+        0.019,
+        0.022
+      ],
+      "nav_rss_mib": 1405.2
+    }
+  ],
+  "median": {
+    "startup_to_home_s": 2.465,
+    "idle_rss_mib": 1269.2,
+    "idle_cpu_percent_one_core": 6.8,
+    "nav_data_page_s": 0.04066666666666666,
+    "nav_rss_mib": 1289.7
+  },
+  "recommendedPreferences": false,
+  "recordedAt": "2026-11-03"
+}

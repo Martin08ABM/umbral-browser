@@ -4,3 +4,13 @@
 
 - name: zen.updates.show-update-notification
   value: true
+
+- name: app.update.url
+  value: ""
+  locked: true
+
+- name: app.update.url.manual
+  value: "https://github.com/Martin08ABM/umbral-browser"
+
+- name: app.update.url.details
+  value: "https://github.com/Martin08ABM/umbral-browser"

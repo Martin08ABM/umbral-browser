@@ -1,6 +1,6 @@
 {
-  "name": "Zen Browser",
-  "vendor": "Zen OSS Team",
+  "name": "Umbral Browser",
+  "vendor": "Umbral Browser contributors",
   "appId": "zen",
   "binaryName": "zen",
   "version": {
@@ -45,6 +45,18 @@
           "repo": "zen-browser/desktop"
         }
       }
+    },
+    "unofficial": {
+      "backgroundColor": "#282A33",
+      "brandShorterName": "Umbral",
+      "brandShortName": "Umbral",
+      "brandFullName": "Umbral Browser",
+      "release": {
+        "displayVersion": "1.0.0",
+        "github": {
+          "repo": "Martin08ABM/umbral-browser"
+        }
+      }
     }
   },
   "license": {
@@ -52,6 +64,5 @@
       ".*\\.json"
     ],
     "licenseType": "MPL-2.0"
-  },
-  "updateHostname": "updates.zen-browser.app"
+  }
 }

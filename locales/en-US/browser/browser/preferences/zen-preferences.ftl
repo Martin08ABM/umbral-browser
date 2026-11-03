@@ -15,12 +15,6 @@ zen-layout-single-toolbar = Only Sidebar
 zen-layout-multiple-toolbar = Sidebar and Top Toolbar
 zen-layout-collapsed-toolbar = Collapsed Sidebar
 
-sync-currently-syncing-workspaces = Workspaces
-sync-engine-workspaces =
-    .label = Workspaces
-    .tooltiptext = Sync your workspaces across devices
-    .accesskey = W
-
 zen-glance-title = Glance
 zen-glance-header = General settings for glance
 zen-glance-description = Get a quick overview of your links without opening them in a new tab
@@ -63,14 +57,6 @@ zen-tabs-select-recently-used-on-close =
 
 zen-tabs-close-on-back-with-no-history =
     .label = Close tab and switch to its owner tab (or most recently used tab) when going back with no history
-
-zen-settings-workspaces-sync =
-    .label = Sync your sidebar across devices
-    .description = Keep your workspaces, pinned tabs and folders in sync on all your devices through your Mozilla account.
-
-zen-settings-normal-tabs-sync =
-    .label = Include unpinned tabs
-    .description = Also sync the regular tabs of each space, not just your pinned tabs and folders.
 
 zen-settings-workspaces-sync-unpinned-tabs =
     .label = Sync only pinned tabs in workspaces
@@ -376,6 +362,36 @@ zen-new-unsynced-window-shortcut = New Blank Window
 zen-duplicate-tab-shortcut = Duplicate Tab
 zen-key-find-selection = Find Selection
 
+umbral-passwords-manager =
+    .label = Use Umbral’s password manager
+    .description = Controls the built-in manager, including saving and filling. Turning it off keeps stored passwords. External managers are independent.
+umbral-passwords-offer =
+    .label = Offer to save passwords
+    .description = Controls save/update prompts and saving generated passwords. Turning it off does not change autofill or delete saved passwords.
+umbral-passwords-autofill =
+    .label = Fill usernames and passwords
+    .description = Controls automatic filling independently of save offers. Requires the built-in manager to be enabled.
+umbral-ai-pane-title = Local AI
+umbral-ai-heading = Local AI assistant
+umbral-ai-description = Optional and off by default. Configure a local OpenAI-compatible server. Umbral contacts it only when you select Send. Only text in this conversation is sent; no page, browsing history, forms, or other tabs are collected. To share page text, paste the exact text you reviewed.
+umbral-ai-endpoint-label = Local server address
+umbral-ai-model-label = Model name
+umbral-ai-key-label = API key (optional)
+umbral-ai-clear-key = Remove the saved API key
+umbral-ai-enabled =
+    .label = Enable the local assistant
+umbral-ai-save = Save settings
+umbral-ai-invalid-config = Enter a valid local HTTP or HTTPS address and model name.
+umbral-ai-config-saved = Settings saved. The server has not been contacted.
+umbral-ai-config-error = Settings could not be saved. Check Firefox password storage settings.
+umbral-ai-chat-heading = Conversation
+umbral-ai-chat-privacy = Messages are kept only in this page and are not saved as chat history. Each request sends only the text you submit.
+umbral-ai-prompt-label = Message
+umbral-ai-send = Send to local server
+umbral-ai-request-pending = Waiting for the local server…
+umbral-ai-request-error = The request failed. Check that the local server is running and supports the configured API.
+umbral-ai-response-error = The server returned an unsupported or oversized response.
+
 zen-searxng-title = SearXNG search instance
 zen-searxng-description = Add an instance you trust. Umbral checks it only after you choose Add or update. Searches go only to the selected instance.
 zen-searxng-url-label = Instance URL
@@ -391,3 +407,9 @@ zen-searxng-invalid-url = Enter an HTTPS or HTTP instance URL without credential
 zen-searxng-remove-confirm = This will remove the SearXNG search engine. Press Remove again to confirm.
 zen-searxng-remove-active = This engine is a normal or private default. Press Remove again to set DuckDuckGo as the affected default and delete it.
 zen-searxng-no-fallback = DuckDuckGo is unavailable. The active engine was not removed.
+
+umbral-ai-api-help = Use the API base address, for example http://127.0.0.1:1234/v1. Umbral appends /chat/completions. A blank key field keeps the saved key.
+
+umbral-ai-cancel = Cancel request
+umbral-ai-request-cancelled = Request cancelled.
+umbral-ai-request-timeout = The local server did not respond in time.

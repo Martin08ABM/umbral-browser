@@ -1,0 +1,105 @@
+{
+  "shortcuts": {
+    "result": "PASS",
+    "crud": true,
+    "restartPersistence": true,
+    "keyboardMenu": true,
+    "responsiveThemes": true,
+    "screenshots": "/tmp/umbral-shortcuts-redesign"
+  },
+  "passwords": {
+    "result": "PASS",
+    "savingOnlyToggle": true,
+    "autofillWhileOffersOff": true,
+    "promptGate": {
+      "off": 0,
+      "on": 1,
+      "autofill": true,
+      "count": 1
+    },
+    "existingDisabledChoicesRetained": true
+  },
+  "aiNative": {
+    "result": "PASS",
+    "requests": 8,
+    "configurationRequests": 0,
+    "credentialRestartPersistence": true,
+    "savingToggleRetainsCredential": true,
+    "disabledAIRequests": 0,
+    "httpFailureAndOversizeResponse": "PASS",
+    "cancelDisableAndPageExitCloseSockets": true,
+    "invalidAuthenticationRejected": true,
+    "flatpak": false,
+    "effectivePrefs": {
+      "etp": "strict",
+      "rfp": false,
+      "fpp": true,
+      "save": true,
+      "fill": true
+    },
+    "updatePolicy": {
+      "browserUpdatesAllowed": false,
+      "embeddedUpdateURL": "",
+      "extensionUpdates": true,
+      "updateURL": "",
+      "updateURLLocked": true,
+      "manualURL": "https://github.com/Martin08ABM/umbral-browser"
+    }
+  },
+  "aiFlatpakSandbox": {
+    "result": "PASS",
+    "requests": 8,
+    "configurationRequests": 0,
+    "credentialRestartPersistence": true,
+    "savingToggleRetainsCredential": true,
+    "disabledAIRequests": 0,
+    "httpFailureAndOversizeResponse": "PASS",
+    "cancelDisableAndPageExitCloseSockets": true,
+    "invalidAuthenticationRejected": true,
+    "flatpak": true,
+    "effectivePrefs": {
+      "etp": "strict",
+      "rfp": false,
+      "fpp": true,
+      "save": true,
+      "fill": true
+    },
+    "updatePolicy": {
+      "browserUpdatesAllowed": false,
+      "embeddedUpdateURL": "",
+      "extensionUpdates": true,
+      "updateURL": "",
+      "updateURLLocked": true,
+      "manualURL": "https://github.com/Martin08ABM/umbral-browser"
+    }
+  },
+  "updatesVerifier": [
+    "valid: PASS",
+    "tampered: PASS",
+    "digest: PASS",
+    "platform: PASS",
+    "downgrade: PASS",
+    "wrong-source: PASS",
+    "application: PASS",
+    "malformed: PASS"
+  ],
+  "updatesManaged": [
+    "source build: PASS",
+    "Firefox ABI: PASS",
+    "channel: PASS",
+    "archive metadata: PASS",
+    "path traversal: PASS",
+    "architecture: PASS",
+    "signature: PASS",
+    "interrupted download retains current: PASS",
+    "live browser rejection: PASS",
+    "activation, no downgrade, old release retention, explicit rollback: PASS"
+  ],
+  "build": {
+    "fullImportsConsecutive": 2,
+    "patchChecksSkipped": false,
+    "ui": "PASS",
+    "nativeLauncher": "PASS"
+  },
+  "realModelInference": "PENDING: no running model server"
+}

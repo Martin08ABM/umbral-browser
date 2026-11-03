@@ -1,0 +1,63 @@
+{
+  "result": "PASS",
+  "runs": [
+    {
+      "backend": "Wayland",
+      "headless": false,
+      "effective": {
+        "profile": "/tmp/umbral-flatpak-test.GbA47E/profile",
+        "data": "/tmp/umbral-flatpak-test.GbA47E/data",
+        "config": "/tmp/umbral-flatpak-test.GbA47E/config",
+        "cache": "/tmp/umbral-flatpak-test.GbA47E/cache",
+        "runtime": "/run/user/1000",
+        "display": "",
+        "wayland": "wayland-1",
+        "sandboxDisabled": "",
+        "sandboxLevel": 6,
+        "graphics": {
+          "AzureFallbackCanvasBackend": "skia",
+          "AzureCanvasBackend": "skia",
+          "AzureContentBackend": "skia",
+          "ApzWheelInput": 1,
+          "ApzDragInput": 1,
+          "ApzKeyboardInput": 1,
+          "ApzAutoscrollInput": 1,
+          "ApzZoomingInput": 1,
+          "DisplayCount": 1
+        },
+        "width": 1290,
+        "height": 810
+      },
+      "screenshot": "/tmp/umbral-flatpak-test.GbA47E/graphical-wayland.png"
+    },
+    {
+      "backend": "X11",
+      "headless": false,
+      "effective": {
+        "profile": "/tmp/umbral-flatpak-test.fhvGuS/profile",
+        "data": "/tmp/umbral-flatpak-test.fhvGuS/data",
+        "config": "/tmp/umbral-flatpak-test.fhvGuS/config",
+        "cache": "/tmp/umbral-flatpak-test.fhvGuS/cache",
+        "runtime": "/run/user/1000",
+        "display": ":0",
+        "wayland": "",
+        "sandboxDisabled": "",
+        "sandboxLevel": 6,
+        "graphics": {
+          "AzureFallbackCanvasBackend": "skia",
+          "AzureCanvasBackend": "skia",
+          "AzureContentBackend": "skia",
+          "ApzWheelInput": 1,
+          "ApzDragInput": 1,
+          "ApzKeyboardInput": 1,
+          "ApzAutoscrollInput": 1,
+          "ApzZoomingInput": 1,
+          "DisplayCount": 1
+        },
+        "width": 1252,
+        "height": 772
+      },
+      "screenshot": "/tmp/umbral-flatpak-test.fhvGuS/graphical-x11.png"
+    }
+  ]
+}

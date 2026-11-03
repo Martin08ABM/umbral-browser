@@ -1,0 +1,59 @@
+{
+  "binary": "current Linux build",
+  "repeats": 3,
+  "conditions": "headless, fresh temporary profiles, about:home and local data pages; 20.0s settling, 10.0s idle window",
+  "runs": [
+    {
+      "run": 1,
+      "startup_cpu_s": 4.84,
+      "navigation_cpu_percent_one_core": 191.51,
+      "startup_to_home_s": 2.488,
+      "idle_rss_mib": 1977.9,
+      "idle_cpu_percent_one_core": 88.4,
+      "nav_data_page_s": [
+        0.074,
+        0.023,
+        0.021
+      ],
+      "nav_rss_mib": 1994.9
+    },
+    {
+      "run": 2,
+      "startup_cpu_s": 4.84,
+      "navigation_cpu_percent_one_core": 222.13,
+      "startup_to_home_s": 2.498,
+      "idle_rss_mib": 1394.7,
+      "idle_cpu_percent_one_core": 60.8,
+      "nav_data_page_s": [
+        0.074,
+        0.026,
+        0.027
+      ],
+      "nav_rss_mib": 1412.7
+    },
+    {
+      "run": 3,
+      "startup_cpu_s": 4.99,
+      "navigation_cpu_percent_one_core": 210.57,
+      "startup_to_home_s": 2.543,
+      "idle_rss_mib": 2060.2,
+      "idle_cpu_percent_one_core": 91.7,
+      "nav_data_page_s": [
+        0.075,
+        0.026,
+        0.029
+      ],
+      "nav_rss_mib": 2075.1
+    }
+  ],
+  "median": {
+    "startup_to_home_s": 2.498,
+    "idle_rss_mib": 1977.9,
+    "idle_cpu_percent_one_core": 88.4,
+    "nav_data_page_s": 0.042333333333333334,
+    "nav_rss_mib": 1994.9
+  },
+  "recommendedPreferences": false,
+  "recordedAt": "2026-11-03",
+  "referenceRevision": "70621a2f2720a2f661191f710269cfc4dd0656c2"
+}

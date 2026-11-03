@@ -1,11 +1,259 @@
 diff --git a/browser/actors/AboutNewTabChild.sys.mjs b/browser/actors/AboutNewTabChild.sys.mjs
-index 88149c9a74..c1131df768 100644
+index 88149c9a74..d60dfbc83c 100644
 --- a/browser/actors/AboutNewTabChild.sys.mjs
 +++ b/browser/actors/AboutNewTabChild.sys.mjs
-@@ -37,6 +37,63 @@ XPCOMUtils.defineLazyPreferenceGetter(
+@@ -37,6 +37,309 @@ XPCOMUtils.defineLazyPreferenceGetter(
  let gNextPortID = 0;
  
  export class AboutNewTabChild extends RemotePageChild {
++  initializeUmbralShortcuts() {
++    if (this._umbralShortcutsInitialized) return;
++    const document = this.document;
++    const list = document.getElementById("umbral-shortcuts-list");
++    const dialog = document.getElementById("umbral-shortcut-dialog");
++    const form = document.getElementById("umbral-shortcut-form");
++    if (!list || !dialog || !form) return;
++    this._umbralShortcutsInitialized = true;
++    this._umbralShortcuts = [];
++    const addButton = document.getElementById("umbral-shortcuts-add");
++    const nameInput = document.getElementById("umbral-shortcut-name");
++    const urlInput = document.getElementById("umbral-shortcut-url");
++    const error = document.getElementById("umbral-shortcut-error");
++    const fields = [
++      [nameInput, "umbral-shortcut-name-error"],
++      [urlInput, "umbral-shortcut-url-error"],
++    ];
++    const clearError = element => {
++      element.removeAttribute("data-l10n-id");
++      element.textContent = "";
++    };
++    const closeMenus = () => {
++      for (const menu of list.querySelectorAll("details[open]"))
++        menu.open = false;
++    };
++    const openDialog = (index = -1) => {
++      closeMenus();
++      this._umbralShortcutEditIndex = index;
++      document.l10n.setAttributes(
++        document.getElementById("umbral-shortcut-dialog-title"),
++        index >= 0 ? "umbral-home-shortcut-edit" : "umbral-home-shortcut-add"
++      );
++      nameInput.value = index >= 0 ? this._umbralShortcuts[index].name : "";
++      urlInput.value = index >= 0 ? this._umbralShortcuts[index].url : "";
++      for (const [input, id] of fields) {
++        input.removeAttribute("aria-invalid");
++        clearError(document.getElementById(id));
++      }
++      clearError(error);
++      dialog.showModal();
++      nameInput.focus();
++    };
++    const save = async shortcuts => {
++      try {
++        const saved = await this.sendQuery("UmbralHome:SetShortcuts", {
++          shortcuts,
++        });
++        if (!Array.isArray(saved)) return false;
++        this._umbralShortcuts = saved;
++        this.renderUmbralShortcuts();
++        return true;
++      } catch {
++        return false;
++      }
++    };
++    addButton.addEventListener("click", () => openDialog());
++    document
++      .getElementById("umbral-shortcut-cancel")
++      .addEventListener("click", () => dialog.close());
++    for (const [input, id] of fields) {
++      input.addEventListener("input", () => {
++        input.removeAttribute("aria-invalid");
++        clearError(document.getElementById(id));
++      });
++    }
++    document.addEventListener("click", event => {
++      for (const menu of list.querySelectorAll("details[open]")) {
++        if (!menu.contains(event.target)) menu.open = false;
++      }
++    });
++    list.addEventListener("keydown", event => {
++      if (event.key === "Escape") {
++        const menu = event.target.closest("details[open]");
++        if (menu) {
++          event.preventDefault();
++          menu.open = false;
++          menu.querySelector("summary").focus();
++        }
++      }
++    });
++    list.addEventListener("contextmenu", event => {
++      const menu = event.target.closest(".shortcut")?.querySelector("details");
++      if (!menu) return;
++      event.preventDefault();
++      closeMenus();
++      menu.open = true;
++      menu.querySelector("button:not(:disabled)").focus();
++    });
++    list.addEventListener("click", async event => {
++      const summary = event.target.closest("summary");
++      if (summary) {
++        for (const menu of list.querySelectorAll("details[open]")) {
++          if (menu !== summary.parentElement) menu.open = false;
++        }
++      }
++      const button = event.target.closest("button[data-shortcut-action]");
++      if (!button) return;
++      const index = Number(button.closest("li").dataset.index);
++      const action = button.dataset.shortcutAction;
++      if (action === "edit") {
++        openDialog(index);
++        return;
++      }
++      const shortcuts = [...this._umbralShortcuts];
++      let target = index;
++      if (action === "delete") {
++        shortcuts.splice(index, 1);
++        target = Math.min(index, shortcuts.length - 1);
++      } else {
++        target += action === "move-up" ? -1 : 1;
++        if (target < 0 || target >= shortcuts.length) return;
++        [shortcuts[index], shortcuts[target]] = [
++          shortcuts[target],
++          shortcuts[index],
++        ];
++      }
++      if (await save(shortcuts)) {
++        (list.querySelector(`[data-index="${target}"] a`) ?? addButton).focus();
++      }
++    });
++    form.addEventListener("submit", async event => {
++      event.preventDefault();
++      if (this._umbralShortcutSaving) return;
++      let invalid = null;
++      const fail = (input, id, message) => {
++        input.setAttribute("aria-invalid", "true");
++        document.l10n.setAttributes(document.getElementById(id), message);
++        invalid ??= input;
++      };
++      if (!nameInput.value.trim() || nameInput.value.trim().length > 48) {
++        fail(
++          nameInput,
++          "umbral-shortcut-name-error",
++          "umbral-home-shortcut-invalid-name"
++        );
++      }
++      let url;
++      try {
++        url = new URL(urlInput.value.trim());
++      } catch {}
++      if (
++        !url ||
++        !["http:", "https:"].includes(url.protocol) ||
++        url.username ||
++        url.password ||
++        url.href.length > 2048
++      ) {
++        fail(
++          urlInput,
++          "umbral-shortcut-url-error",
++          "umbral-home-shortcut-invalid-url"
++        );
++      }
++      if (invalid) {
++        invalid.focus();
++        return;
++      }
++      const shortcuts = [...this._umbralShortcuts];
++      const index =
++        this._umbralShortcutEditIndex >= 0
++          ? this._umbralShortcutEditIndex
++          : shortcuts.length;
++      if (index >= 12) return;
++      shortcuts[index] = { name: nameInput.value.trim(), url: url.href };
++      this._umbralShortcutSaving = true;
++      const submit = form.querySelector('[type="submit"]');
++      submit.disabled = true;
++      try {
++        if (await save(shortcuts)) {
++          dialog.close();
++          list.querySelector(`[data-index="${index}"] a`)?.focus();
++        } else {
++          document.l10n.setAttributes(error, "umbral-home-shortcut-save-error");
++        }
++      } finally {
++        this._umbralShortcutSaving = false;
++        submit.disabled = false;
++      }
++    });
++    this.sendQuery("UmbralHome:GetShortcuts")
++      .then(shortcuts => {
++        if (Array.isArray(shortcuts)) {
++          this._umbralShortcuts = shortcuts;
++          this.renderUmbralShortcuts();
++        }
++      })
++      .catch(() => {});
++  }
++
++  renderUmbralShortcuts() {
++    const document = this.document;
++    const list = document?.getElementById("umbral-shortcuts-list");
++    if (!list) return;
++    const addItem = document.getElementById("umbral-shortcuts-add-item");
++    document.getElementById("umbral-shortcuts-add").disabled =
++      this._umbralShortcuts.length >= 12;
++    document.getElementById("umbral-shortcuts-empty").hidden =
++      !!this._umbralShortcuts.length;
++    const fragment = document.createDocumentFragment();
++    for (const [index, shortcut] of this._umbralShortcuts.entries()) {
++      const item = document.createElement("li");
++      item.className = "shortcut";
++      item.dataset.index = index;
++      const link = document.createElement("a");
++      link.className = "shortcut-link";
++      link.href = shortcut.url;
++      link.rel = "noreferrer";
++      link.title = shortcut.name;
++      const icon = document.createElement("span");
++      icon.className = "shortcut-icon";
++      icon.setAttribute("aria-hidden", "true");
++      icon.textContent = shortcut.name.trim().charAt(0).toLocaleUpperCase();
++      const label = document.createElement("span");
++      label.className = "shortcut-name";
++      label.textContent = shortcut.name;
++      link.append(icon, label);
++      const menu = document.createElement("details");
++      menu.className = "shortcut-menu";
++      const summary = document.createElement("summary");
++      summary.textContent = "⋯";
++      document.l10n.setAttributes(summary, "umbral-home-shortcut-menu", {
++        name: shortcut.name,
++      });
++      const controls = document.createElement("div");
++      controls.className = "shortcut-menu-actions";
++      for (const [action, id] of [
++        ["edit", "umbral-home-shortcut-edit-button"],
++        ["move-up", "umbral-home-shortcut-move-up"],
++        ["move-down", "umbral-home-shortcut-move-down"],
++        ["delete", "umbral-home-shortcut-delete"],
++      ]) {
++        const button = document.createElement("button");
++        button.type = "button";
++        button.dataset.shortcutAction = action;
++        button.disabled =
++          (action === "move-up" && index === 0) ||
++          (action === "move-down" &&
++            index === this._umbralShortcuts.length - 1);
++        document.l10n.setAttributes(button, id, { name: shortcut.name });
++        controls.append(button);
++      }
++      menu.append(summary, controls);
++      item.append(link, menu);
++      fragment.append(item);
++    }
++    list.replaceChildren(fragment, addItem);
++  }
++
 +  receiveMessage(message) {
 +    if (message.name === "UmbralHome:PrivacyData") {
 +      const { status, label, trackers, cookies } = message.data ?? {};
@@ -14,9 +262,7 @@ index 88149c9a74..c1131df768 100644
 +        typeof label !== "string" ||
 +        label.length > 64 ||
 +        ![trackers, cookies].every(
-+          count =>
-+            count === null ||
-+            (Number.isSafeInteger(count) && count >= 0)
++          count => count === null || (Number.isSafeInteger(count) && count >= 0)
 +        )
 +      ) {
 +        return;
@@ -66,19 +312,20 @@ index 88149c9a74..c1131df768 100644
    async handleEvent(event) {
      if (event.type == "DOMDocElementInserted") {
        let portID = Services.appinfo.processID + ":" + ++gNextPortID;
-@@ -53,6 +110,11 @@ export class AboutNewTabChild extends RemotePageChild {
+@@ -53,6 +356,12 @@ export class AboutNewTabChild extends RemotePageChild {
      } else if (event.type == "load") {
        this.sendAsyncMessage("Load");
      } else if (event.type == "DOMContentLoaded") {
 +      const documentURI = this.contentWindow.document.documentURI;
 +      if (documentURI === "about:home" || documentURI === "about:newtab") {
++        this.initializeUmbralShortcuts();
 +        this.requestUmbralPrivacyData(true);
 +        return;
 +      }
        if (!this.contentWindow.document.body.firstElementChild) {
          return; // about:newtab is a blank page
        }
-@@ -132,6 +194,22 @@ export class AboutNewTabChild extends RemotePageChild {
+@@ -132,6 +441,19 @@ export class AboutNewTabChild extends RemotePageChild {
          // destroyed
        }
      } else if (event.type == "pageshow" || event.type == "visibilitychange") {
@@ -88,10 +335,7 @@ index 88149c9a74..c1131df768 100644
 +      if (isUmbralHome && this.document.visibilityState !== "visible") {
 +        this._umbralHomeNeedsRefresh = true;
 +      }
-+      if (
-+        isUmbralHome &&
-+        this.document.visibilityState === "visible"
-+      ) {
++      if (isUmbralHome && this.document.visibilityState === "visible") {
 +        this.requestUmbralPrivacyData(
 +          this._umbralHomeNeedsRefresh ||
 +            (event.type === "pageshow" && event.persisted)

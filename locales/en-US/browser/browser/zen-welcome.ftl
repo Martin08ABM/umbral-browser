@@ -2,24 +2,39 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-zen-welcome-title-line1 = Welcome to
-zen-welcome-title-line2 = a calmer internet
-
+zen-welcome-title = Welcome to Umbral
+zen-welcome-intro = A clear, customizable browser built on Zen Browser and Firefox, with privacy controls that stay in your hands.
+zen-welcome-start = Get started
+zen-welcome-progress =
+    .aria-label = Setup steps
+zen-welcome-step-welcome = Welcome
+zen-welcome-step-search = Search
+zen-welcome-step-theme = Your space
+zen-welcome-step-ready = Ready
+zen-welcome-rail-note = Your choices stay on this device. You can change them later in Settings.
 zen-welcome-back = Back
-zen-welcome-skip = Skip for now
-
-zen-welcome-import-title = Bring your stuff along.
-zen-welcome-import-description = Import your bookmarks, history and passwords from another browser and pick up right where you left off.
-zen-welcome-import-yes = <strong>YES</strong>, import from another browser.
-zen-welcome-import-no = <strong>NO</strong>, start fresh.
-
-zen-welcome-default-browser-title = Make { -brand-short-name } your default?
-zen-welcome-default-browser-description = Links from other apps will open in { -brand-short-name }. You can always change this later.
-zen-welcome-set-default-browser = <strong>YES</strong>, make { -brand-short-name } default.
-zen-welcome-dont-set-default-browser = <strong>NO</strong>, still exploring my options.
-
-zen-welcome-default-search-title = Pick your search engine.
-zen-welcome-default-search-description = Choose your default search engine. You can always change it later!
+zen-welcome-continue = Continue
+zen-welcome-search-title = Your search engine
+zen-welcome-search-description = DuckDuckGo is selected for new profiles. Choose another available engine if you prefer; your choice can be changed later.
+zen-welcome-theme-title = Your space
+zen-welcome-theme-description = Choose how Umbral looks. This uses Firefox’s existing appearance setting, and you can change it later.
+zen-welcome-theme-light = Light
+zen-welcome-theme-dark = Dark
+zen-welcome-theme-system = Use system setting
+zen-welcome-ready-title = Ready to browse
+zen-welcome-ready-description = Your browser is set up. These protections help reduce known tracking and keep work separate; they do not make you anonymous.
+zen-welcome-protection-title = Privacy protections
+zen-welcome-protection-description = Enhanced Tracking Protection is set to Strict, and uBlock Origin is included. You can adjust or disable them at any time.
+zen-welcome-containers-title = Containers
+zen-welcome-containers-description = Keep site data in separate containers. New tabs inherit the active tab’s container when one is selected.
+zen-welcome-set-default-browser = Set Umbral as default browser
+zen-welcome-default-browser-already = Umbral is already the default browser
+zen-welcome-default-browser-current = Umbral is the default browser on this device.
+zen-welcome-default-browser-unavailable = This build or a system policy does not allow checking or changing the default browser. Use your system’s application settings if you want to change it.
+zen-welcome-default-browser-pending = Your system may ask you to confirm the change. After confirming, check the status here.
+zen-welcome-default-browser-check = Check default status
+zen-welcome-default-browser-error = Umbral could not request the change. Check your system’s default application settings.
+zen-welcome-not-now = Not now
 zen-welcome-searxng-description = Add an instance you trust. Umbral checks it only after you choose Add. Typing sends no requests, and the new engine will not become your default until you select it.
 zen-welcome-searxng-url-label = SearXNG instance URL
 zen-welcome-searxng-add = Add SearXNG instance
@@ -31,18 +46,3 @@ zen-welcome-searxng-http-local-confirm = This local instance uses HTTP. Traffic 
 zen-welcome-searxng-error = The instance could not be added. Check its URL and OpenSearch support, then try again.
 zen-welcome-searxng-suggestions-error = This OpenSearch descriptor offers remote suggestions, which Umbral does not enable.
 zen-welcome-searxng-edit-in-settings = An instance is already configured. Edit it in Search settings to avoid duplicates.
-
-zen-welcome-essentials-title = Choose the apps you use most.
-zen-welcome-essentials-description = Select your favorite apps to keep them handy in your sidebar.
-
-zen-welcome-block-ads-title = Block ads and trackers?
-zen-welcome-block-ads-description = { -brand-short-name } can install uBlock Origin for you, so pages load cleaner and faster. You can remove it any time.
-zen-welcome-block-ads-yes = <strong>YES</strong>, block ads for me.
-zen-welcome-block-ads-no = <strong>NO</strong>, show me everything.
-
-zen-welcome-workspace-colors-title = Your space, your colors.
-zen-welcome-workspace-colors-description = Personalize your browser by giving each space its own unique color identity.
-
-zen-welcome-start-browsing-title = All set? Let’s get rolling!
-zen-welcome-start-browsing-description-1 = You’re all set up and ready to go. Click the button below to start browsing with { -brand-short-name }.
-zen-welcome-start-browsing = Dive in!

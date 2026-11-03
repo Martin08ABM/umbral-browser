@@ -326,6 +326,36 @@ zen-new-unsynced-window-shortcut = Nueva ventana no sincronizada
 zen-duplicate-tab-shortcut = Duplicar pestaña
 zen-key-find-selection = Encontrar selección
 
+umbral-passwords-manager =
+    .label = Usar el gestor de contraseñas de Umbral
+    .description = Controla el gestor integrado, incluido el guardado y el rellenado. Al desactivarlo se conservan las claves guardadas. Los gestores externos son independientes.
+umbral-passwords-offer =
+    .label = Ofrecer guardar contraseñas
+    .description = Controla los avisos para guardar o actualizar y el guardado de contraseñas generadas. Desactivarlo no cambia el autocompletado ni borra claves.
+umbral-passwords-autofill =
+    .label = Rellenar nombres de usuario y contraseñas
+    .description = Controla el rellenado automático independientemente de los avisos para guardar. Requiere que el gestor integrado esté activado.
+umbral-ai-pane-title = IA local
+umbral-ai-heading = Asistente de IA local
+umbral-ai-description = Opcional y desactivado inicialmente. Configura un servidor local compatible con OpenAI. Umbral solo se conecta cuando pulsas «Enviar». Solo se envía el texto de esta conversación; no se recopilan páginas, historial, formularios ni otras pestañas. Para compartir texto de una página, pega el texto exacto que hayas revisado.
+umbral-ai-endpoint-label = Dirección del servidor local
+umbral-ai-model-label = Nombre del modelo
+umbral-ai-key-label = Clave de API (opcional)
+umbral-ai-clear-key = Eliminar la clave de API guardada
+umbral-ai-enabled =
+    .label = Activar el asistente local
+umbral-ai-save = Guardar ajustes
+umbral-ai-invalid-config = Introduce una dirección local HTTP o HTTPS válida y el nombre del modelo.
+umbral-ai-config-saved = Ajustes guardados. No se ha contactado con el servidor.
+umbral-ai-config-error = No se pudieron guardar los ajustes. Comprueba el almacenamiento de contraseñas de Firefox.
+umbral-ai-chat-heading = Conversación
+umbral-ai-chat-privacy = Los mensajes solo se mantienen en esta página y no se guardan como historial del chat. Cada solicitud envía únicamente el texto que escribes.
+umbral-ai-prompt-label = Mensaje
+umbral-ai-send = Enviar al servidor local
+umbral-ai-request-pending = Esperando al servidor local…
+umbral-ai-request-error = La solicitud ha fallado. Comprueba que el servidor local esté activo y admita la API configurada.
+umbral-ai-response-error = El servidor ha devuelto una respuesta no compatible o demasiado grande.
+
 zen-searxng-title = Instancia de búsqueda SearXNG
 zen-searxng-description = Añade una instancia de confianza. Umbral solo la comprueba cuando pulsas «Añadir o actualizar». Las búsquedas solo se envían a la instancia seleccionada.
 zen-searxng-url-label = URL de la instancia
@@ -341,3 +371,9 @@ zen-searxng-invalid-url = Introduce una URL HTTP o HTTPS sin credenciales, pará
 zen-searxng-remove-confirm = Se eliminará el motor SearXNG. Vuelve a pulsar «Eliminar instancia» para confirmar.
 zen-searxng-remove-active = Este motor es el predeterminado normal o privado. Vuelve a pulsar «Eliminar instancia» para cambiar el predeterminado afectado a DuckDuckGo y eliminarlo.
 zen-searxng-no-fallback = DuckDuckGo no está disponible. No se eliminó el motor activo.
+
+umbral-ai-api-help = Usa la dirección base de la API, por ejemplo http://127.0.0.1:1234/v1. Umbral añade /chat/completions. Dejar la clave en blanco conserva la guardada.
+
+umbral-ai-cancel = Cancelar solicitud
+umbral-ai-request-cancelled = Solicitud cancelada.
+umbral-ai-request-timeout = El servidor local no ha respondido a tiempo.

@@ -1,5 +1,5 @@
 diff --git a/browser/components/preferences/preferences.js b/browser/components/preferences/preferences.js
-index b7fbb8b9dcf595cf3e3176c4535023f0884b040a..fdcba3778857c602c85ef61488dbf7ba9f6a1fbe 100644
+index b7fbb8b9dc..be7bd8bd0d 100644
 --- a/browser/components/preferences/preferences.js
 +++ b/browser/components/preferences/preferences.js
 @@ -131,6 +131,7 @@ ChromeUtils.defineLazyGetter(this, "gSubDialog", function () {
@@ -28,7 +28,7 @@ index b7fbb8b9dcf595cf3e3176c4535023f0884b040a..fdcba3778857c602c85ef61488dbf7ba
          // Replace the template element with the nodes inside of it.
          template.replaceWith(template.content);
  
-@@ -565,6 +568,10 @@ function init_all() {
+@@ -565,6 +568,11 @@ function init_all() {
    }
    register_module("paneSearch", gSearchPane);
    register_module("panePrivacy", gPrivacyPane);
@@ -36,6 +36,7 @@ index b7fbb8b9dcf595cf3e3176c4535023f0884b040a..fdcba3778857c602c85ef61488dbf7ba
 +  register_module("paneZenTabManagement", gZenWorkspacesSettings);
 +  register_module("paneZenCKS", gZenCKSSettings);
 +  register_module("paneZenMarketplace", gZenMarketplaceManager);
++  register_module("paneUmbralAI", gUmbralAISettings);
  
    // Restore the cached Firefox Labs nav button visibility so it shows
    // immediately when recipes are expected to be available, before

@@ -1,0 +1,67 @@
+{
+  "binary": "isolated homepage-resource reference",
+  "repeats": 3,
+  "conditions": {
+    "headless": true,
+    "profile": "copy of settled fixture",
+    "template": "dedicated settled temporary fixture, never a personal profile",
+    "page": "about:home",
+    "settleSeconds": 10.0,
+    "idleSeconds": 10.0
+  },
+  "runs": [
+    {
+      "run": 1,
+      "startup_cpu_s": 3.37,
+      "navigation_cpu_percent_one_core": 191.3,
+      "startup_to_home_s": 1.963,
+      "idle_rss_mib": 1225.4,
+      "idle_pss_mib": 571.6,
+      "idle_cpu_percent_one_core": 0.5,
+      "nav_data_page_s": [
+        0.055,
+        0.024,
+        0.018
+      ],
+      "nav_rss_mib": 1251.1
+    },
+    {
+      "run": 2,
+      "startup_cpu_s": 3.42,
+      "navigation_cpu_percent_one_core": 175.24,
+      "startup_to_home_s": 1.986,
+      "idle_rss_mib": 1271.7,
+      "idle_pss_mib": 616.9,
+      "idle_cpu_percent_one_core": 0.7,
+      "nav_data_page_s": [
+        0.075,
+        0.027,
+        0.029
+      ],
+      "nav_rss_mib": 1296.0
+    },
+    {
+      "run": 3,
+      "startup_cpu_s": 3.36,
+      "navigation_cpu_percent_one_core": 193.33,
+      "startup_to_home_s": 1.96,
+      "idle_rss_mib": 1222.7,
+      "idle_pss_mib": 570.3,
+      "idle_cpu_percent_one_core": 0.5,
+      "nav_data_page_s": [
+        0.074,
+        0.028,
+        0.031
+      ],
+      "nav_rss_mib": 1248.0
+    }
+  ],
+  "median": {
+    "startup_to_home_s": 1.963,
+    "idle_pss_mib": 571.6,
+    "idle_rss_mib": 1225.4,
+    "idle_cpu_percent_one_core": 0.5,
+    "nav_data_page_s": 0.043666666666666666,
+    "nav_rss_mib": 1251.1
+  }
+}

@@ -507,3 +507,40 @@ html|setting-group:is([data-subcategory="layout"], [groupid="support"], [groupid
     display: none !important;
   }
 }
+
+#umbralAISettings {
+  max-width: 720px;
+}
+
+#umbralAISettings input:not([type="checkbox"]),
+#umbralAISettings textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#umbralAISettings textarea {
+  resize: vertical;
+}
+
+#umbralAIConversation {
+  max-height: 320px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding-block: 8px;
+}
+
+.umbral-ai-user-message,
+.umbral-ai-assistant-message {
+  white-space: pre-wrap;
+}
+
+.umbral-ai-user-message {
+  font-weight: 600;
+}
+
+#umbralAIPrompt:focus-visible,
+#umbralAISettings input:focus-visible,
+#umbralAISettings button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

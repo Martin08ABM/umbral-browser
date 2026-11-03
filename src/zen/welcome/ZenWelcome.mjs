@@ -6,56 +6,19 @@
   let lazy = {};
 
   ChromeUtils.defineESModuleGetters(lazy, {
-    AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
-    CustomizableUI:
-      "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
-    AddonRepository: "resource://gre/modules/addons/AddonRepository.sys.mjs",
     SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   });
 
+  const { DefaultBrowserHelper } = ChromeUtils.importESModule(
+    "chrome://browser/content/preferences/DefaultBrowserHelper.mjs",
+    { global: "current" }
+  );
+
+  const kSystemThemePref = "ui.systemUsesDarkTheme";
   const kZenElementsToIgnore = [
     "zen-browser-background",
     "zen-toast-container",
   ];
-
-  const kEssentialApps = [
-    { url: "https://obsidian.md", icon: "obsidian", color: "#7c3aed" },
-    { url: "https://discord.com", icon: "discord", color: "#5865f2" },
-    { url: "https://trello.com", icon: "trello", color: "#0052cc" },
-    { url: "https://slack.com", icon: "slack", color: "#e01e5a" },
-    { url: "https://github.com", icon: "github", color: "#57606a" },
-    { url: "https://app.tuta.com/", icon: "tuta", color: "#c00002" },
-    { url: "https://notion.com", icon: "notion", color: "#37352f" },
-    { url: "https://calendar.google.com", icon: "calendar", color: "#4285f4" },
-    { url: "https://figma.com", icon: "figma", color: "#f24e1e" },
-  ];
-
-  const kAdBlockerId = "uBlock0@raymondhill.net";
-
-  const gChoices = {
-    setDefaultBrowser: false,
-    essentials: new Set(),
-    blockAds: true,
-  };
-
-  let _adBlocker;
-
-  async function fetchAdBlocker() {
-    if (_adBlocker !== undefined) {
-      return _adBlocker;
-    }
-    try {
-      const [found, installed] = await Promise.all([
-        lazy.AddonRepository.getAddonsByIDs([kAdBlockerId]),
-        lazy.AddonManager.getAddonsByIDs([kAdBlockerId]),
-      ]);
-      _adBlocker = installed[0] || !found[0]?.sourceURI ? null : found[0];
-    } catch (ex) {
-      console.error(ex);
-      _adBlocker = null;
-    }
-    return _adBlocker;
-  }
 
   function clearBrowserElements() {
     for (const element of document.getElementById("browser").children) {
@@ -70,64 +33,67 @@
     return gZenUIManager.motion;
   }
 
-  function animate(...args) {
-    return getMotion().animate(...args);
+  function animate(target, keyframes, options) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      let elements = target;
+      if (typeof target === "string") {
+        elements = document.querySelectorAll(target);
+      } else if (Element.isInstance(target)) {
+        elements = [target];
+      }
+      if (keyframes?.opacity) {
+        const opacity = Array.isArray(keyframes.opacity)
+          ? keyframes.opacity.at(-1)
+          : keyframes.opacity;
+        for (const element of elements) {
+          element.style.opacity = opacity;
+        }
+      }
+      return Promise.resolve();
+    }
+    return getMotion().animate(target, keyframes, options);
   }
 
-  function parseXUL(xul) {
-    return window.MozXULElement.parseXULToFragment(xul);
-  }
-
-  function initializeZenWelcome() {
+  async function initializeZenWelcome() {
     document.documentElement.setAttribute("zen-welcome-stage", "true");
     const XUL = `
-      <html:video id="zen-welcome-video" autoplay="" loop="" muted=""
-                    disablepictureinpicture="" tabindex="-1"
-                    src="chrome://browser/content/zen-videos/welcome-background.mp4"></html:video>
-      <html:div id="zen-welcome">
+      <html:div id="zen-welcome" role="dialog" aria-modal="true" aria-labelledby="zen-welcome-title">
         <html:div id="zen-welcome-start">
-          <html:h1 id="zen-welcome-title"></html:h1>
-          <button class="footer-button primary" id="zen-welcome-start-button">
-          </button>
+          <html:img class="umbral-welcome-logo logo-light" src="chrome://branding/content/umbral-logo-light.png" alt="Umbral" />
+          <html:img class="umbral-welcome-logo logo-dark" src="chrome://branding/content/umbral-logo-dark.png" alt="Umbral" />
+          <html:h1 id="zen-welcome-title" data-l10n-id="zen-welcome-title"></html:h1>
+          <html:p id="zen-welcome-intro" data-l10n-id="zen-welcome-intro"></html:p>
+          <button class="zen-welcome-primary" id="zen-welcome-start-button" data-l10n-id="zen-welcome-start"></button>
         </html:div>
         <html:div id="zen-welcome-pages">
-          <html:div id="zen-welcome-page-sidebar">
-            <html:button id="zen-welcome-back" data-l10n-id="zen-welcome-back"></html:button>
-            <html:div id="zen-welcome-page-sidebar-content"></html:div>
-            <html:div id="zen-welcome-page-sidebar-buttons"></html:div>
-          </html:div>
-          <html:div id="zen-welcome-page-content"></html:div>
+          <html:aside id="zen-welcome-rail">
+            <html:img class="umbral-welcome-rail-logo logo-light" src="chrome://branding/content/umbral-logo-light.png" alt="Umbral" />
+            <html:img class="umbral-welcome-rail-logo logo-dark" src="chrome://branding/content/umbral-logo-dark.png" alt="Umbral" />
+            <html:ol id="zen-welcome-stepper" data-l10n-id="zen-welcome-progress">
+              <html:li aria-current="step" data-l10n-id="zen-welcome-step-welcome"></html:li>
+              <html:li data-l10n-id="zen-welcome-step-search"></html:li>
+              <html:li data-l10n-id="zen-welcome-step-theme"></html:li>
+              <html:li data-l10n-id="zen-welcome-step-ready"></html:li>
+            </html:ol>
+            <html:p id="zen-welcome-rail-note" data-l10n-id="zen-welcome-rail-note"></html:p>
+          </html:aside>
+          <html:main id="zen-welcome-main">
+            <html:header id="zen-welcome-page-heading">
+              <html:button id="zen-welcome-back" data-l10n-id="zen-welcome-back"></html:button>
+              <html:div id="zen-welcome-page-title"></html:div>
+            </html:header>
+            <html:section id="zen-welcome-page-content"></html:section>
+            <html:footer id="zen-welcome-page-buttons"></html:footer>
+          </html:main>
         </html:div>
       </html:div>
     `;
-    document.getElementById("browser").appendChild(parseXUL(XUL));
-    const video = document.getElementById("zen-welcome-video");
-    video.play().catch(() => {});
+    const welcome = window.MozXULElement.parseXULToFragment(XUL);
+    document.getElementById("browser").appendChild(welcome);
     window.MozXULElement.insertFTLIfNeeded("browser/zen-welcome.ftl");
-  }
-
-  var _iconToData = {};
-
-  async function getIconData(iconURL) {
-    if (_iconToData[iconURL]) {
-      return _iconToData[iconURL];
-    }
-    const response = await fetch(iconURL);
-    if (!response.ok) {
-      console.error(`Failed to fetch icon: ${iconURL}`);
-      return null;
-    }
-    const blob = await response.blob();
-    const reader = new FileReader();
-    const data = await new Promise(resolve => {
-      reader.onloadend = () => {
-        const base64Data = reader.result.split(",")[1];
-        _iconToData[iconURL] = `data:${blob.type};base64,${base64Data}`;
-        resolve(_iconToData[iconURL]);
-      };
-      reader.readAsDataURL(blob);
-    });
-    return data;
+    await document.l10n.translateFragment(
+      document.getElementById("zen-welcome")
+    );
   }
 
   function createOption({ id, group, checked, l10n, text, extra }) {
@@ -157,57 +123,6 @@
     return label;
   }
 
-  const _startedInstalls = new Set();
-
-  function unpinInstalledAddon(addon) {
-    const widgetId =
-      addon.id.toLowerCase().replace(/[^a-z0-9_-]/g, "_") + "-browser-action";
-    try {
-      if (lazy.CustomizableUI.getPlacementOfWidget(widgetId)) {
-        lazy.CustomizableUI.addWidgetToArea(
-          widgetId,
-          lazy.CustomizableUI.AREA_ADDONS
-        );
-      }
-    } catch (ex) {
-      console.error(ex);
-    }
-  }
-
-  function installAddons(addons) {
-    for (const addon of addons) {
-      if (_startedInstalls.has(addon.id)) {
-        continue;
-      }
-      _startedInstalls.add(addon.id);
-      (async () => {
-        try {
-          const install = await lazy.AddonManager.getInstallForURL(
-            addon.sourceURI.spec,
-            { name: addon.name, icons: addon.icons }
-          );
-          await install.install();
-          unpinInstalledAddon(addon);
-        } catch (ex) {
-          console.error(`Failed to install ${addon.id}`, ex);
-        }
-      })();
-    }
-  }
-
-  function removeVideoBackground() {
-    const video = document.getElementById("zen-welcome-video");
-    if (!video) {
-      return;
-    }
-    animate(video, { opacity: 0 }, { duration: 0.6, ease: "easeOut" }).then(
-      () => {
-        video.pause();
-        video.remove();
-      }
-    );
-  }
-
   const kSpring = { type: "spring", bounce: 0.35, visualDuration: 0.35 };
   const kExit = { duration: 0.12, ease: "easeIn" };
   const kFade = { duration: 0.25, ease: "easeOut" };
@@ -226,7 +141,7 @@
     }
 
     get textContainer() {
-      return document.getElementById("zen-welcome-page-sidebar-content");
+      return document.getElementById("zen-welcome-page-title");
     }
 
     get contentContainer() {
@@ -234,7 +149,7 @@
     }
 
     get buttonsContainer() {
-      return document.getElementById("zen-welcome-page-sidebar-buttons");
+      return document.getElementById("zen-welcome-page-buttons");
     }
 
     get backButton() {
@@ -252,7 +167,7 @@
     init() {
       document.getElementById("zen-welcome-start").remove();
       const pages = document.getElementById("zen-welcome-pages");
-      pages.style.display = "flex";
+      pages.style.display = "grid";
       animate(pages, { opacity: [0, 1] }, { ...kFade, duration: 0.45 });
       this.backButton.addEventListener("click", () => this.back());
     }
@@ -283,6 +198,22 @@
         this.finish();
         return;
       }
+      const currentStep = index + 2;
+      document.documentElement.setAttribute(
+        "zen-welcome-current-step",
+        currentStep
+      );
+      for (const [stepIndex, step] of document
+        .getElementById("zen-welcome-stepper")
+        .querySelectorAll("li")
+        .entries()) {
+        if (stepIndex + 1 === currentStep) {
+          step.setAttribute("aria-current", "step");
+        } else {
+          step.removeAttribute("aria-current");
+        }
+        step.toggleAttribute("data-complete", stepIndex + 1 < currentStep);
+      }
       previous?.leave?.();
       this.#exit(this.textContainer, { x: [0, -80 * direction] });
       this.#exit(this.contentContainer, {});
@@ -309,6 +240,8 @@
       const text = document.createElement("div");
       text.className = "zen-welcome-text";
       const title = document.createElement("h1");
+      title.id = "zen-welcome-current-title";
+      title.tabIndex = -1;
       document.l10n.setAttributes(title, page.title);
       text.appendChild(title);
       for (const id of page.descriptions ?? []) {
@@ -321,6 +254,10 @@
         return;
       }
       this.textContainer.appendChild(text);
+      document
+        .getElementById("zen-welcome")
+        .setAttribute("aria-labelledby", title.id);
+      title.focus({ preventScroll: true });
       animate(
         [...text.children],
         { opacity: [0, 1], x: [120 * direction, 0] },
@@ -350,6 +287,9 @@
       const fragment = document.createDocumentFragment();
       for (const button of this.currentPage.buttons) {
         const element = document.createElement("button");
+        if (button.id) {
+          element.id = button.id;
+        }
         element.className = button.primary
           ? "zen-big-accent-button primary"
           : "zen-big-accent-button";
@@ -363,6 +303,7 @@
       }
       await document.l10n.translateFragment(fragment);
       if (token === this.#buttonsToken) {
+        await this.currentPage.prepareButtons?.(fragment, this.#content);
         this.buttonsContainer.replaceChildren(fragment);
       }
     }
@@ -371,77 +312,24 @@
       ++this.#buttonsToken;
       this.buttonsContainer.replaceChildren();
       this.backButton.toggleAttribute("disabled", true);
-      gZenWorkspaces.reorganizeTabsAfterWelcome();
-      const promises = [this.#applyChoices()];
       await animate("#zen-welcome", { opacity: [1, 0] });
       this.contentContainer.remove();
-      await Promise.all(promises);
-      _iconToData = undefined; // Unload icon data
       document.getElementById("zen-welcome").remove();
       document.documentElement.removeAttribute("zen-welcome-stage");
+      document.documentElement.removeAttribute("zen-welcome-current-step");
       unlockWindowSize();
       for (const element of document.getElementById("browser").children) {
         if (kZenElementsToIgnore.includes(element.id)) {
           continue;
         }
-        element.style.opacity = 0;
+        element.style.removeProperty("opacity");
         element.style.removeProperty("display");
       }
       gZenUIManager.updateTabsToolbar();
-      let elementsToIgnore = kZenElementsToIgnore
-        .map(id => `#${id}`)
-        .join(", ");
-      await animate(`#browser > *:not(${elementsToIgnore})`, {
-        opacity: [0, 1],
-      });
-      _adBlocker = undefined;
-      _startedInstalls.clear();
-    }
-
-    async #applyChoices() {
-      await this.#pinEssentials();
-      let tabsToGroup = [];
-      if (!gBrowser.selectedTab.hasAttribute("zen-empty-tab")) {
-        tabsToGroup.push(gBrowser.selectedTab);
-      }
-      gZenFolders.createFolder(tabsToGroup, {
-        renameFolder: false,
-        label: "zen basics",
-      });
-    }
-
-    async #pinEssentials() {
-      const apps = kEssentialApps.filter(app =>
-        gChoices.essentials.has(app.url)
-      );
-      if (!apps.length) {
-        return;
-      }
-      await PlacesUtils.history.insertMany(
-        apps.map(app => ({
-          url: app.url,
-          visits: [{ transition: PlacesUtils.history.TRANSITIONS.TYPED }],
-        }))
-      );
-      const { TabStateCache } = ChromeUtils.importESModule(
-        "moz-src:///browser/components/sessionstore/TabStateCache.sys.mjs"
-      );
-      for (const app of apps) {
-        const tab = window.gBrowser.addTrustedTab(app.url, {
-          inBackground: true,
-          createLazyBrowser: true,
-        });
-        const icon = await getIconData(
-          `chrome://browser/content/zen-images/favicons/${app.icon}.svg`
-        );
-        // Update the persistent tab state cache with |tabData| information.
-        TabStateCache.update(tab.linkedBrowser.permanentKey, {
-          history: { entries: [{ url: app.url }], index: 0 },
-          image: icon,
-        });
-        gBrowser.setIcon(tab, icon);
-        tab.removeAttribute("pending"); // Make it appear loaded
-        gZenPinnedTabManager.addToEssentials(tab);
+      const currentTab = gBrowser.selectedTab;
+      gBrowser.selectedTab = gBrowser.addTrustedTab("about:home");
+      if (currentTab.linkedBrowser.currentURI.spec === "about:blank") {
+        gBrowser.removeTab(currentTab, { animate: false });
       }
     }
   }
@@ -520,104 +408,55 @@
     }
   }
 
-  const kNextButton = { l10n: "zen-generic-next", primary: true };
-
-  async function setDefaultBrowser() {
-    const shellSvc =
-      AppConstants.HAVE_SHELL_SERVICE && window.getShellService();
-    if (!shellSvc) {
-      return;
-    }
-    try {
-      await shellSvc.setDefaultBrowser(false);
-    } catch (ex) {
-      console.error(ex);
+  function getAppearanceMode() {
+    switch (Services.prefs.getIntPref(kSystemThemePref, -1)) {
+      case 0:
+        return "light";
+      case 1:
+        return "dark";
+      default:
+        return "system";
     }
   }
 
+  function canSetDefaultBrowser() {
+    return (
+      DefaultBrowserHelper.canCheck &&
+      Services.policies.isAllowed("setDefaultBrowser") &&
+      !Services.prefs.prefIsLocked(
+        "pref.general.disable_button.default_browser"
+      )
+    );
+  }
+
+  function setAppearanceMode(mode) {
+    if (mode === "system") {
+      if (Services.prefs.prefHasUserValue(kSystemThemePref)) {
+        Services.prefs.clearUserPref(kSystemThemePref);
+      }
+      return;
+    }
+    Services.prefs.setIntPref(kSystemThemePref, mode === "light" ? 0 : 1);
+  }
+
   function getWelcomePages() {
+    const kNextButton = { l10n: "zen-welcome-continue", primary: true };
     return [
       {
-        id: "import",
-        title: "zen-welcome-import-title",
-        descriptions: ["zen-welcome-import-description"],
-        buttons: [kNextButton],
-        render(content) {
-          const yes = createOption({
-            id: "zen-welcome-import-yes",
-            group: "zen-welcome-import",
-            l10n: "zen-welcome-import-yes",
-          });
-          content.appendChild(yes);
-          content.appendChild(
-            createOption({
-              id: "zen-welcome-import-no",
-              group: "zen-welcome-import",
-              l10n: "zen-welcome-import-no",
-              checked: true,
-            })
-          );
-        },
-        commit(content) {
-          if (content.querySelector("#zen-welcome-import-yes").checked) {
-            MigrationUtils.showMigrationWizard(window, {
-              isStartupMigration: true,
-            });
-          }
-        },
-      },
-      {
-        id: "colors",
-        title: "zen-welcome-workspace-colors-title",
-        descriptions: ["zen-welcome-workspace-colors-description"],
-        buttons: [kNextButton],
-        render(content) {
-          removeVideoBackground();
-          const anchor = document.createElement("div");
-          anchor.id = "zen-welcome-workspace-colors-anchor";
-          content.appendChild(anchor);
-          const panel = gZenThemePicker.panel;
-          panel.setAttribute("noautohide", "true");
-          panel.setAttribute("consumeoutsideclicks", "false");
-          panel.setAttribute("nonnative", "");
-          panel.addEventListener(
-            "popupshowing",
-            () => {
-              const panelRect = panel.getBoundingClientRect();
-              // 20 is the shadow width * 2
-              anchor.style.height =
-                panelRect.height -
-                (AppConstants.platform == "macosx" ? -90 : 20) +
-                "px";
-              anchor.style.width = panelRect.width - 20 + "px";
-            },
-            { once: true }
-          );
-          PanelMultiView.openPopup(panel, anchor, { position: "overlap" });
-        },
-        leave() {
-          const panel = gZenThemePicker.panel;
-          panel.removeAttribute("noautohide");
-          panel.removeAttribute("consumeoutsideclicks");
-          panel.removeAttribute("nonnative");
-          animate(panel, { opacity: [1, 0] }, kExit).then(() => {
-            panel.hidePopup();
-            panel.removeAttribute("style");
-          });
-        },
-      },
-      {
         id: "search",
-        title: "zen-welcome-default-search-title",
-        descriptions: ["zen-welcome-default-search-description"],
+        title: "zen-welcome-search-title",
+        descriptions: ["zen-welcome-search-description"],
         buttons: [kNextButton],
         async render(content) {
           const engineStore = new ZenSearchEngineStore();
           await engineStore.init();
           const defaultEngine = await lazy.SearchService.getDefault();
+          const engineOptions = document.createElement("div");
+          engineOptions.className = "zen-welcome-search-engines";
+          content.appendChild(engineOptions);
           const appendEngineOption = engine => {
             if (
-              content.querySelector(
+              engineOptions.querySelector(
                 `#zen-welcome-engine-${CSS.escape(engine.name.replace(/\s+/g, "-"))}`
               )
             ) {
@@ -625,16 +464,42 @@
             }
             const iconWrapper = document.createElement("div");
             iconWrapper.className = "engine-icon-wrapper";
+            const iconFallback = document.createElement("span");
+            iconFallback.className = "engine-icon-fallback";
+            iconFallback.textContent = engine.name
+              .slice(0, 1)
+              .toLocaleUpperCase();
             const iconBackdrop = document.createElement("img");
             iconBackdrop.className = "engine-icon-backdrop";
+            iconBackdrop.alt = "";
             const icon = document.createElement("img");
             icon.className = "engine-icon";
+            icon.alt = "";
             icon.width = icon.height = 40;
-            iconWrapper.append(iconBackdrop, icon);
-            engine.originalEngine.getIconURL(96).then(url => {
-              icon.src = url;
-              iconBackdrop.src = url;
-            });
+            iconWrapper.append(iconFallback, iconBackdrop, icon);
+            icon.addEventListener(
+              "load",
+              () => iconWrapper.setAttribute("data-icon-loaded", "true"),
+              { once: true }
+            );
+            icon.addEventListener(
+              "error",
+              () => iconWrapper.setAttribute("data-icon-unavailable", "true"),
+              { once: true }
+            );
+            engine.originalEngine
+              .getIconURL(96)
+              .then(url => {
+                if (url) {
+                  icon.src = url;
+                  iconBackdrop.src = url;
+                } else {
+                  iconWrapper.setAttribute("data-icon-unavailable", "true");
+                }
+              })
+              .catch(() =>
+                iconWrapper.setAttribute("data-icon-unavailable", "true")
+              );
             const option = createOption({
               id: "zen-welcome-engine-" + engine.name.replace(/\s+/g, "-"),
               group: "zen-welcome-search-engine",
@@ -647,7 +512,7 @@
               .addEventListener("change", () =>
                 engineStore.setDefaultEngine(engine)
               );
-            content.appendChild(option);
+            engineOptions.appendChild(option);
           };
           for (const engine of engineStore.getEngines()) {
             appendEngineOption(engine);
@@ -656,13 +521,13 @@
           const searxng = document.createElement("section");
           searxng.className = "zen-welcome-searxng";
           const description = document.createElement("p");
-          description.setAttribute(
-            "data-l10n-id",
+          document.l10n.setAttributes(
+            description,
             "zen-welcome-searxng-description"
           );
           const label = document.createElement("label");
           label.htmlFor = "zen-welcome-searxng-url";
-          label.setAttribute("data-l10n-id", "zen-welcome-searxng-url-label");
+          document.l10n.setAttributes(label, "zen-welcome-searxng-url-label");
           const input = document.createElement("input");
           input.id = "zen-welcome-searxng-url";
           input.type = "url";
@@ -670,15 +535,12 @@
           const addButton = document.createElement("button");
           addButton.id = "zen-welcome-searxng-add";
           addButton.type = "button";
-          addButton.setAttribute(
-            "data-l10n-id",
-            "zen-welcome-searxng-add"
-          );
-          const status = document.createElement("p");
-          status.id = "zen-welcome-searxng-status";
-          status.setAttribute("role", "status");
-          status.setAttribute("aria-live", "polite");
-          searxng.append(description, label, input, addButton, status);
+          document.l10n.setAttributes(addButton, "zen-welcome-searxng-add");
+          const statusElement = document.createElement("p");
+          statusElement.id = "zen-welcome-searxng-status";
+          statusElement.setAttribute("role", "status");
+          statusElement.setAttribute("aria-live", "polite");
+          searxng.append(description, label, input, addButton, statusElement);
           content.appendChild(searxng);
           document.l10n.translateElements([description, label, addButton]);
 
@@ -689,7 +551,7 @@
               instance = new URL(input.value.trim());
             } catch {
               document.l10n.setAttributes(
-                status,
+                statusElement,
                 "zen-welcome-searxng-invalid-url"
               );
               return;
@@ -703,27 +565,28 @@
               instance.hash
             ) {
               document.l10n.setAttributes(
-                status,
+                statusElement,
                 "zen-welcome-searxng-invalid-url"
               );
               return;
             }
-            if (instance.protocol === "http:") {
-              if (pendingHTTPURL !== instance.href) {
-                pendingHTTPURL = instance.href;
-                const local =
-                  instance.hostname === "localhost" ||
-                  instance.hostname.endsWith(".localhost") ||
-                  instance.hostname === "127.0.0.1" ||
-                  instance.hostname === "[::1]";
-                document.l10n.setAttributes(
-                  status,
-                  local
-                    ? "zen-welcome-searxng-http-local-confirm"
-                    : "zen-welcome-searxng-http-confirm"
-                );
-                return;
-              }
+            if (
+              instance.protocol === "http:" &&
+              pendingHTTPURL !== instance.href
+            ) {
+              pendingHTTPURL = instance.href;
+              const local =
+                instance.hostname === "localhost" ||
+                instance.hostname.endsWith(".localhost") ||
+                instance.hostname === "127.0.0.1" ||
+                instance.hostname === "[::1]";
+              document.l10n.setAttributes(
+                statusElement,
+                local
+                  ? "zen-welcome-searxng-http-local-confirm"
+                  : "zen-welcome-searxng-http-confirm"
+              );
+              return;
             }
             pendingHTTPURL = "";
 
@@ -733,7 +596,7 @@
             }
             descriptor.searchParams.set("autocomplete", "");
             document.l10n.setAttributes(
-              status,
+              statusElement,
               "zen-welcome-searxng-checking"
             );
             addButton.disabled = true;
@@ -793,21 +656,20 @@
                   descriptor.href
                 );
               }
-              const optionEngine = engineStore.addEngine(engine);
-              appendEngineOption(optionEngine);
+              appendEngineOption(engineStore.addEngine(engine));
               document.l10n.setAttributes(
-                status,
+                statusElement,
                 "zen-welcome-searxng-added"
               );
             } catch (error) {
               console.error("Umbral welcome SearXNG setup failed", error);
-              const messageId =
-                error.message === "edit-in-settings"
-                  ? "zen-welcome-searxng-edit-in-settings"
-                  : error.message === "suggestions-present"
-                    ? "zen-welcome-searxng-suggestions-error"
-                    : "zen-welcome-searxng-error";
-              document.l10n.setAttributes(status, messageId);
+              let messageId = "zen-welcome-searxng-error";
+              if (error.message === "edit-in-settings") {
+                messageId = "zen-welcome-searxng-edit-in-settings";
+              } else if (error.message === "suggestions-present") {
+                messageId = "zen-welcome-searxng-suggestions-error";
+              }
+              document.l10n.setAttributes(statusElement, messageId);
             } finally {
               addButton.disabled = false;
             }
@@ -815,208 +677,194 @@
         },
       },
       {
-        id: "block-ads",
-        title: "zen-welcome-block-ads-title",
-        descriptions: ["zen-welcome-block-ads-description"],
+        id: "theme",
+        title: "zen-welcome-theme-title",
+        descriptions: ["zen-welcome-theme-description"],
         buttons: [kNextButton],
-        // Nothing to offer once we know the add-on can't be installed.
-        skip() {
-          return _adBlocker === null;
-        },
-        async render(content, pages) {
-          content.appendChild(
-            createOption({
-              id: "zen-welcome-block-ads-yes",
-              group: "zen-welcome-block-ads",
-              l10n: "zen-welcome-block-ads-yes",
-              checked: gChoices.blockAds,
-            })
-          );
-          content.appendChild(
-            createOption({
-              id: "zen-welcome-block-ads-no",
-              group: "zen-welcome-block-ads",
-              l10n: "zen-welcome-block-ads-no",
-              checked: !gChoices.blockAds,
-            })
-          );
-          // The lookup is warmed at startup, so this usually settled long ago.
-          if ((await fetchAdBlocker()) === null && content.isConnected) {
-            pages.next();
-          }
-        },
-        commit(content) {
-          gChoices.blockAds = content.querySelector(
-            "#zen-welcome-block-ads-yes"
-          ).checked;
-          if (gChoices.blockAds && _adBlocker) {
-            installAddons([_adBlocker]);
-          }
-        },
-      },
-      {
-        id: "essentials",
-        title: "zen-welcome-essentials-title",
-        descriptions: ["zen-welcome-essentials-description"],
-        buttons: [
-          kNextButton,
-          {
-            l10n: "zen-welcome-skip",
-            onclick(pages) {
-              for (const button of pages.content.querySelectorAll(
-                ".zen-welcome-essential[selected]"
-              )) {
-                button.removeAttribute("selected");
-              }
-            },
-          },
-        ],
         render(content) {
-          content.appendChild(
-            parseXUL(`
-              <html:div class="zen-welcome-mock-browser">
-                <html:div class="zen-welcome-mock-browser-sidebar">
-                  <html:div class="zen-welcome-mock-browser-dots">
-                    <html:div class="no-squircles"></html:div>
-                    <html:div class="no-squircles"></html:div>
-                    <html:div class="no-squircles"></html:div>
-                  </html:div>
-                  <html:div id="zen-welcome-essentials"></html:div>
-                  <html:div class="zen-welcome-mock-tab"></html:div>
-                  <html:div class="zen-welcome-mock-tab"></html:div>
-                </html:div>
-              </html:div>
-            `)
-          );
-          const grid = content.querySelector("#zen-welcome-essentials");
-          for (const app of kEssentialApps) {
-            const button = document.createElement("button");
-            button.className = "zen-welcome-essential";
-            button.dataset.url = app.url;
-            button.style.setProperty(
-              "--zen-welcome-app-icon",
-              `url("chrome://browser/content/zen-images/favicons/${app.icon}.svg")`
-            );
-            button.style.setProperty("--zen-welcome-app-color", app.color);
-            button.toggleAttribute(
-              "selected",
-              gChoices.essentials.has(app.url)
-            );
-            button.addEventListener("click", () => {
-              button.toggleAttribute("selected");
+          const selectedMode = getAppearanceMode();
+          for (const mode of ["light", "dark", "system"]) {
+            const preview = document.createElement("span");
+            preview.className = "zen-welcome-theme-preview";
+            preview.dataset.appearance = mode;
+            preview.setAttribute("aria-hidden", "true");
+            const option = createOption({
+              id: `zen-welcome-theme-${mode}`,
+              group: "zen-welcome-theme",
+              l10n: `zen-welcome-theme-${mode}`,
+              checked: mode === selectedMode,
+              extra: preview,
             });
-            grid.appendChild(button);
-          }
-        },
-        commit(content) {
-          gChoices.essentials = new Set(
-            [
-              ...content.querySelectorAll(".zen-welcome-essential[selected]"),
-            ].map(button => button.dataset.url)
-          );
-        },
-      },
-      {
-        id: "default-browser",
-        title: "zen-welcome-default-browser-title",
-        descriptions: ["zen-welcome-default-browser-description"],
-        buttons: [kNextButton],
-        render(content) {
-          content.appendChild(
-            createOption({
-              id: "zen-welcome-set-default-browser",
-              group: "zen-welcome-default-browser",
-              l10n: "zen-welcome-set-default-browser",
-              checked: gChoices.setDefaultBrowser,
-            })
-          );
-          content.appendChild(
-            createOption({
-              id: "zen-welcome-dont-set-default-browser",
-              group: "zen-welcome-default-browser",
-              l10n: "zen-welcome-dont-set-default-browser",
-              checked: !gChoices.setDefaultBrowser,
-            })
-          );
-        },
-        commit(content) {
-          gChoices.setDefaultBrowser = content.querySelector(
-            "#zen-welcome-set-default-browser"
-          ).checked;
-          if (gChoices.setDefaultBrowser) {
-            setDefaultBrowser();
+            option.querySelector("input").addEventListener("change", () => {
+              setAppearanceMode(mode);
+            });
+            content.appendChild(option);
           }
         },
       },
       {
         id: "finish",
-        title: "zen-welcome-start-browsing-title",
-        descriptions: ["zen-welcome-start-browsing-description-1"],
-        buttons: [{ l10n: "zen-welcome-start-browsing", primary: true }],
-        render() {},
+        title: "zen-welcome-ready-title",
+        descriptions: ["zen-welcome-ready-description"],
+        buttons: [
+          {
+            id: "zen-welcome-set-default-browser",
+            l10n: "zen-welcome-set-default-browser",
+            primary: true,
+            onclick: pages => {
+              requestDefaultBrowser(pages.content);
+              return false;
+            },
+          },
+          { l10n: "zen-welcome-not-now" },
+        ],
+        async prepareButtons(buttons, content) {
+          const button = buttons.querySelector(
+            "#zen-welcome-set-default-browser"
+          );
+          const statusElement = content.querySelector(
+            "#zen-welcome-default-browser-status"
+          );
+          button.setAttribute("aria-describedby", statusElement.id);
+          if (!canSetDefaultBrowser()) {
+            button.disabled = true;
+            document.l10n.setAttributes(
+              statusElement,
+              "zen-welcome-default-browser-unavailable"
+            );
+            await document.l10n.translateElements([statusElement]);
+            return;
+          }
+          try {
+            if (DefaultBrowserHelper.isBrowserDefault) {
+              button.disabled = true;
+              document.l10n.setAttributes(
+                button,
+                "zen-welcome-default-browser-already"
+              );
+              document.l10n.setAttributes(
+                statusElement,
+                "zen-welcome-default-browser-current"
+              );
+              await document.l10n.translateElements([button, statusElement]);
+            }
+          } catch (error) {
+            console.error("Umbral could not check the default browser", error);
+            button.disabled = true;
+            document.l10n.setAttributes(
+              statusElement,
+              "zen-welcome-default-browser-error"
+            );
+            await document.l10n.translateElements([statusElement]);
+          }
+        },
+        render(content) {
+          const summary = document.createElement("div");
+          summary.className = "zen-welcome-summary";
+          for (const [titleId, descriptionId] of [
+            [
+              "zen-welcome-protection-title",
+              "zen-welcome-protection-description",
+            ],
+            [
+              "zen-welcome-containers-title",
+              "zen-welcome-containers-description",
+            ],
+          ]) {
+            const item = document.createElement("article");
+            const title = document.createElement("h2");
+            const description = document.createElement("p");
+            document.l10n.setAttributes(title, titleId);
+            document.l10n.setAttributes(description, descriptionId);
+            item.append(title, description);
+            summary.appendChild(item);
+          }
+          content.appendChild(summary);
+          const statusElement = document.createElement("p");
+          statusElement.id = "zen-welcome-default-browser-status";
+          statusElement.className = "zen-welcome-default-browser-status";
+          statusElement.setAttribute("role", "status");
+          statusElement.setAttribute("aria-live", "polite");
+          content.appendChild(statusElement);
+        },
       },
     ];
   }
 
-  async function animateInitialStage() {
-    const [title1, title2] = await document.l10n.formatValues([
-      { id: "zen-welcome-title-line1" },
-      { id: "zen-welcome-title-line2" },
-    ]);
-    const titleElement = document.getElementById("zen-welcome-title");
-    for (const line of [title1, title2]) {
-      const lineElement = document.createElement("span");
-      for (const char of line) {
-        if (char === " ") {
-          lineElement.append(" ");
-          continue;
-        }
-        const charElement = document.createElement("span");
-        charElement.className = "zen-welcome-char";
-        charElement.textContent = char;
-        lineElement.appendChild(charElement);
-      }
-      titleElement.appendChild(lineElement);
-    }
-    const chars = titleElement.querySelectorAll(".zen-welcome-char");
-    await animate(
-      chars,
-      { opacity: [0, 1], y: [50, 0] },
-      {
-        delay: getMotion().stagger(0.035, { startDelay: 0.8 }),
-        type: "spring",
-        bounce: 0.3,
-        visualDuration: 0.45,
-      }
+  async function requestDefaultBrowser(content) {
+    const button = document.getElementById("zen-welcome-set-default-browser");
+    const statusElement = content.querySelector(
+      "#zen-welcome-default-browser-status"
     );
+    if (!canSetDefaultBrowser() || button.disabled) {
+      return;
+    }
+    button.disabled = true;
+    try {
+      if (!button.dataset.checkOnly) {
+        await DefaultBrowserHelper.shellSvc.setDefaultBrowser(false);
+      }
+      if (DefaultBrowserHelper.isBrowserDefault) {
+        document.l10n.setAttributes(
+          button,
+          "zen-welcome-default-browser-already"
+        );
+        document.l10n.setAttributes(
+          statusElement,
+          "zen-welcome-default-browser-current"
+        );
+      } else {
+        button.dataset.checkOnly = "true";
+        button.disabled = false;
+        document.l10n.setAttributes(
+          button,
+          "zen-welcome-default-browser-check"
+        );
+        document.l10n.setAttributes(
+          statusElement,
+          "zen-welcome-default-browser-pending"
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Umbral could not request the default browser change",
+        error
+      );
+      button.disabled = false;
+      document.l10n.setAttributes(
+        statusElement,
+        "zen-welcome-default-browser-error"
+      );
+    }
+    await document.l10n.translateElements([button, statusElement]);
+  }
+
+  async function animateInitialStage() {
     const button = document.getElementById("zen-welcome-start-button");
     button.addEventListener(
       "click",
       async () => {
         await animate(
-          "#zen-welcome-title .zen-welcome-char, #zen-welcome-start-button",
-          { opacity: [1, 0], y: [0, -14] },
-          {
-            duration: 0.3,
-            ease: "easeIn",
-            delay: getMotion().stagger(0.012),
-          }
+          "#zen-welcome-start > *",
+          { opacity: [1, 0], y: [0, -12] },
+          { duration: 0.2, ease: "easeIn" }
         );
         new nsZenWelcomePages(getWelcomePages());
       },
       { once: true }
     );
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      button.focus({ preventScroll: true });
+      return;
+    }
+
     await animate(
-      button,
-      { opacity: [0, 1], y: [20, 0], filter: ["blur(2px)", "blur(0px)"] },
-      {
-        delay: 0.1,
-        type: "spring",
-        stiffness: 300,
-        damping: 20,
-        mass: 1.8,
-      }
+      "#zen-welcome-start > *",
+      { opacity: [0, 1], y: [18, 0] },
+      { delay: getMotion().stagger(0.08), duration: 0.45, ease: "easeOut" }
     );
+    button.focus({ preventScroll: true });
   }
 
   const kSizeLockProperties = [
@@ -1063,11 +911,10 @@
     );
   }
 
-  function startZenWelcome() {
-    fetchAdBlocker();
+  async function startZenWelcome() {
     clearBrowserElements();
     centerWindowOnScreen();
-    initializeZenWelcome();
+    await initializeZenWelcome();
     animateInitialStage();
   }
 
