@@ -5,6 +5,7 @@
         content/browser/zenThemeModifier.js                                     (../../zen/common/zenThemeModifier.js)
         content/browser/ZenPreloadedScripts.js                                  (../../zen/common/ZenPreloadedScripts.js)
         content/browser/UmbralLocalAI.sys.mjs                                  (../../zen/common/modules/UmbralLocalAI.sys.mjs)
+        content/browser/UmbralLocalAISidebar.sys.mjs                            (../../zen/common/modules/UmbralLocalAISidebar.sys.mjs)
         content/browser/UmbralDefaultSearch.sys.mjs                             (../../zen/common/modules/UmbralDefaultSearch.sys.mjs)
         content/browser/UmbralBrowserChrome.mjs                                (../../zen/common/modules/UmbralBrowserChrome.mjs)
         content/browser/zen-sets.js                                             (../../zen/common/zen-sets.js)

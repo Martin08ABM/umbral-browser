@@ -1,0 +1,103 @@
+diff --git a/browser/components/preferences/config/account-sync.mjs b/browser/components/preferences/config/account-sync.mjs
+--- a/browser/components/preferences/config/account-sync.mjs
++++ b/browser/components/preferences/config/account-sync.mjs
+@@ -46,6 +46,8 @@
+   { id: "services.sync.engine.creditcards", type: "bool" },
+   { id: "services.sync.engine.addons", type: "bool" },
+   { id: "services.sync.engine.prefs", type: "bool" },
++  { id: "services.sync.engine.spaces", type: "bool" },
++  { id: "zen.spaces-sync.normal-tabs", type: "bool" },
+ ]);
+ 
+ /**
+@@ -561,11 +563,24 @@
+     type: "payments",
+   },
+   { id: "syncAddons", pref: "services.sync.engine.addons", type: "addons" },
++  { id: "syncSpaces", pref: "services.sync.engine.spaces", type: "workspaces" },
+   { id: "syncSettings", pref: "services.sync.engine.prefs", type: "settings" },
+ ];
+ 
+ SYNC_ENGINE_SETTINGS.forEach(({ id, pref }) => {
+   Preferences.addSetting({ id, pref });
++});
++
++Preferences.addSetting({ id: "zenSyncWorkspacesGroup" });
++Preferences.addSetting({
++  id: "zenSyncWorkspaces",
++  pref: "services.sync.engine.spaces",
++});
++Preferences.addSetting({
++  id: "zenSyncNormalTabs",
++  pref: "zen.spaces-sync.normal-tabs",
++  deps: ["zenSyncWorkspaces"],
++  visible: deps => !!deps.zenSyncWorkspaces.value,
+ });
+ 
+ Preferences.addSetting({
+@@ -833,7 +848,7 @@
+   },
+ });
+ 
+-let accountsEnabled = Services.prefs.getBoolPref("identity.fxaccounts.enabled");
++let accountsEnabled = false;
+ 
+ SettingGroupManager.registerGroups({
+   defaultBrowserSync: window.createDefaultBrowserConfig({
+@@ -843,7 +858,7 @@
+   }),
+   accountDisabled: {
+     inProgress: true,
+-    hidden: accountsEnabled,
++    hidden: true,
+     items: [
+       {
+         id: "fxaAccountDisabled",
+@@ -860,7 +875,7 @@
+     l10nId: "account-group-label2",
+     headingLevel: 2,
+     iconSrc: "chrome://browser/skin/preferences/mozilla-logo.svg",
+-    hidden: !accountsEnabled,
++    hidden: true,
+     items: [
+       {
+         id: "noFxaAccountGroup",
+@@ -958,8 +973,8 @@
+     l10nId: "sync-group-label",
+     headingLevel: 2,
+     iconSrc: "chrome://browser/skin/sync.svg",
+-    hidden: !accountsEnabled,
+-    subcategory: "sync",
++    hidden: true,
++    subcategory: "general",
+     items: [
+       {
+         id: "syncNoFxaSignIn",
+@@ -997,6 +1012,27 @@
+           {
+             id: "syncEnginesList",
+             control: "sync-engines-list",
++          },
++          {
++            id: "zenSyncWorkspacesGroup",
++            control: "moz-box-item",
++            items: [
++              {
++                id: "zenSyncWorkspaces",
++                l10nId: "zen-settings-workspaces-sync",
++                control: "moz-toggle",
++                controlAttrs: {
++                  inputlayout: "inline-end",
++                },
++                items: [
++                  {
++                    id: "zenSyncNormalTabs",
++                    l10nId: "zen-settings-normal-tabs-sync",
++                    control: "moz-checkbox",
++                  },
++                ],
++              },
++            ],
+           },
+           {
+             id: "syncChangeOptions",

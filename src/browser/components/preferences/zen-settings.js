@@ -5,14 +5,14 @@
 
 const { nsZenMultiWindowFeature } = ChromeUtils.importESModule(
   "chrome://browser/content/zen-components/ZenCommonUtils.mjs",
-  { global: "current" }
+  { global: "current" },
 );
 
 const { nsKeyShortcutModifiers } = ChromeUtils.importESModule(
   "chrome://browser/content/zen-components/ZenKeyboardShortcuts.mjs",
   {
     global: "current",
-  }
+  },
 );
 
 var gZenMarketplaceManager = {
@@ -21,7 +21,9 @@ var gZenMarketplaceManager = {
       return;
     }
 
-    const checkForUpdates = document.getElementById("zenThemeMarketplaceCheckForUpdates");
+    const checkForUpdates = document.getElementById(
+      "zenThemeMarketplaceCheckForUpdates",
+    );
     const header = document.getElementById("zenMarketplaceHeader");
 
     if (!checkForUpdates || !header) {
@@ -48,7 +50,7 @@ var gZenMarketplaceManager = {
       () => {
         Services.prefs.removeObserver(gZenMods.updatePref, this);
       },
-      { once: true }
+      { once: true },
     );
 
     await this._buildModsList();
@@ -63,26 +65,36 @@ var gZenMarketplaceManager = {
 
     checkForUpdates.addEventListener("click", checkForUpdateClick);
 
-    document.addEventListener("ZenModsMarketplace:CheckForUpdatesFinished", (event) => {
-      checkForUpdates.disabled = false;
+    document.addEventListener(
+      "ZenModsMarketplace:CheckForUpdatesFinished",
+      (event) => {
+        checkForUpdates.disabled = false;
 
-      const updates = event.detail.updates;
-      const success = document.getElementById("zenThemeMarketplaceUpdatesSuccess");
-      const error = document.getElementById("zenThemeMarketplaceUpdatesFailure");
+        const updates = event.detail.updates;
+        const success = document.getElementById(
+          "zenThemeMarketplaceUpdatesSuccess",
+        );
+        const error = document.getElementById(
+          "zenThemeMarketplaceUpdatesFailure",
+        );
 
-      if (updates) {
-        success.hidden = false;
-        error.hidden = true;
-      } else {
-        success.hidden = true;
-        error.hidden = false;
-      }
-    });
+        if (updates) {
+          success.hidden = false;
+          error.hidden = true;
+        } else {
+          success.hidden = true;
+          error.hidden = false;
+        }
+      },
+    );
 
     window.addEventListener("unload", () => {
       this.__hasInitializedEvents = false;
 
-      document.removeEventListener("ZenModsMarketplace:CheckForUpdatesFinished", this);
+      document.removeEventListener(
+        "ZenModsMarketplace:CheckForUpdatesFinished",
+        this,
+      );
       document.removeEventListener("ZenCheckForModUpdates", this);
 
       checkForUpdates.removeEventListener("click", checkForUpdateClick);
@@ -106,7 +118,10 @@ var gZenMarketplaceManager = {
   },
 
   _initDisableAll() {
-    const areModsDisabled = Services.prefs.getBoolPref("zen.themes.disable-all", false);
+    const areModsDisabled = Services.prefs.getBoolPref(
+      "zen.themes.disable-all",
+      false,
+    );
     const browser = nsZenMultiWindowFeature.currentBrowser;
     const mozToggle = document.createElement("moz-toggle");
 
@@ -116,7 +131,7 @@ var gZenMarketplaceManager = {
 
     browser.document.l10n.setAttributes(
       mozToggle,
-      `zen-theme-disable-all-${!areModsDisabled ? "enabled" : "disabled"}`
+      `zen-theme-disable-all-${!areModsDisabled ? "enabled" : "disabled"}`,
     );
 
     mozToggle.addEventListener("toggle", async (event) => {
@@ -126,7 +141,7 @@ var gZenMarketplaceManager = {
       Services.prefs.setBoolPref("zen.themes.disable-all", !pressed);
       browser.document.l10n.setAttributes(
         mozToggle,
-        `zen-theme-disable-all-${pressed ? "enabled" : "disabled"}`
+        `zen-theme-disable-all-${pressed ? "enabled" : "disabled"}`,
       );
     });
 
@@ -179,8 +194,12 @@ var gZenMarketplaceManager = {
   },
 
   async _importThemes() {
-    const errorBox = document.getElementById("zenThemeMarketplaceImportFailure");
-    const successBox = document.getElementById("zenThemeMarketplaceImportSuccess");
+    const errorBox = document.getElementById(
+      "zenThemeMarketplaceImportFailure",
+    );
+    const successBox = document.getElementById(
+      "zenThemeMarketplaceImportSuccess",
+    );
 
     successBox.hidden = true;
     errorBox.hidden = true;
@@ -206,7 +225,9 @@ var gZenMarketplaceManager = {
       });
 
       timeout = setTimeout(() => {
-        console.warn("[ZenSettings:ZenMods]: Import timeout reached, aborting.");
+        console.warn(
+          "[ZenSettings:ZenMods]: Import timeout reached, aborting.",
+        );
         resolve(null);
       }, 60000);
     });
@@ -234,7 +255,10 @@ var gZenMarketplaceManager = {
         await window.ZenInstallMod(mod);
       }
     } catch (error) {
-      console.error("[ZenSettings:ZenMods]: Error while importing mods:", error);
+      console.error(
+        "[ZenSettings:ZenMods]: Error while importing mods:",
+        error,
+      );
       errorBox.hidden = false;
     }
 
@@ -244,8 +268,12 @@ var gZenMarketplaceManager = {
   },
 
   async _exportThemes() {
-    const errorBox = document.getElementById("zenThemeMarketplaceExportFailure");
-    const successBox = document.getElementById("zenThemeMarketplaceExportSuccess");
+    const errorBox = document.getElementById(
+      "zenThemeMarketplaceExportFailure",
+    );
+    const successBox = document.getElementById(
+      "zenThemeMarketplaceExportSuccess",
+    );
 
     successBox.hidden = true;
     errorBox.hidden = true;
@@ -260,14 +288,14 @@ var gZenMarketplaceManager = {
       fp.init(
         window.browsingContext,
         "Export Zen Mods",
-        nsIFilePicker.modeSave
+        nsIFilePicker.modeSave,
       );
       fp.defaultString = "zen-mods-export";
       fp.defaultExtension = "json";
       fp.appendFilter("JSON Files", "*.json");
       fp.appendFilters(nsIFilePicker.filterAll);
 
-      const result = await new Promise(resolve => {
+      const result = await new Promise((resolve) => {
         fp.open(resolve);
       });
 
@@ -280,7 +308,10 @@ var gZenMarketplaceManager = {
         successBox.hidden = false;
       }
     } catch (error) {
-      console.error("[ZenSettings:ZenMods]: Error while exporting mods:", error);
+      console.error(
+        "[ZenSettings:ZenMods]: Error while exporting mods:",
+        error,
+      );
       errorBox.hidden = false;
     }
   },
@@ -299,7 +330,9 @@ var gZenMarketplaceManager = {
     const browser = nsZenMultiWindowFeature.currentBrowser;
     const modList = document.createElement("div");
 
-    for (const mod of Object.values(mods).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const mod of Object.values(mods).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
       const sanitizedName = gZenMods.sanitizeModName(mod.name);
       const isModEnabled = mod.enabled === undefined || mod.enabled;
       const fragment = window.MozXULElement.parseXULToFragment(`
@@ -321,7 +354,9 @@ var gZenMarketplaceManager = {
       const modName = `${mod.name} (v${mod.version ?? "1.0.0"})`;
 
       const base = fragment.querySelector(".zenThemeMarketplaceItem");
-      const baseHeader = fragment.querySelector("#zenThemeMarketplaceItemContentHeader");
+      const baseHeader = fragment.querySelector(
+        "#zenThemeMarketplaceItemContentHeader",
+      );
 
       const dialog = document.createElement("dialog");
       const mainDialogDiv = document.createElement("div");
@@ -334,12 +369,19 @@ var gZenMarketplaceManager = {
       mainDialogDiv.className = "zenThemeMarketplaceItemPreferenceDialog";
       headerDiv.className = "zenThemeMarketplaceItemPreferenceDialogTopBar";
       headerTitle.textContent = modName;
-      browser.document.l10n.setAttributes(headerTitle, "zen-theme-marketplace-theme-header-title", {
-        name: sanitizedName,
-      });
+      browser.document.l10n.setAttributes(
+        headerTitle,
+        "zen-theme-marketplace-theme-header-title",
+        {
+          name: sanitizedName,
+        },
+      );
       headerTitle.className = "zenThemeMarketplaceItemTitle";
       closeButton.id = `${sanitizedName}-modal-close`;
-      browser.document.l10n.setAttributes(closeButton, "zen-theme-marketplace-close-modal");
+      browser.document.l10n.setAttributes(
+        closeButton,
+        "zen-theme-marketplace-close-modal",
+      );
       contentDiv.id = `${sanitizedName}-preferences-content`;
       contentDiv.className = "zenThemeMarketplaceItemPreferenceDialogContent";
       mozToggle.className = "zenThemeMarketplaceItemPreferenceToggle";
@@ -347,7 +389,7 @@ var gZenMarketplaceManager = {
       mozToggle.pressed = isModEnabled;
       browser.document.l10n.setAttributes(
         mozToggle,
-        `zen-theme-marketplace-toggle-${isModEnabled ? "enabled" : "disabled"}-button`
+        `zen-theme-marketplace-toggle-${isModEnabled ? "enabled" : "disabled"}-button`,
       );
 
       baseHeader.appendChild(mozToggle);
@@ -376,12 +418,14 @@ var gZenMarketplaceManager = {
 
           browser.document.l10n.setAttributes(
             mozToggle,
-            "zen-theme-marketplace-toggle-disabled-button"
+            "zen-theme-marketplace-toggle-disabled-button",
           );
 
           if (mod.preferences) {
             document
-              .getElementById(`zenThemeMarketplaceItemConfigureButton-${sanitizedName}`)
+              .getElementById(
+                `zenThemeMarketplaceItemConfigureButton-${sanitizedName}`,
+              )
               .setAttribute("hidden", true);
           }
         } else {
@@ -389,12 +433,14 @@ var gZenMarketplaceManager = {
 
           browser.document.l10n.setAttributes(
             mozToggle,
-            "zen-theme-marketplace-toggle-enabled-button"
+            "zen-theme-marketplace-toggle-enabled-button",
           );
 
           if (mod.preferences) {
             document
-              .getElementById(`zenThemeMarketplaceItemConfigureButton-${sanitizedName}`)
+              .getElementById(
+                `zenThemeMarketplaceItemConfigureButton-${sanitizedName}`,
+              )
               .removeAttribute("hidden");
           }
         }
@@ -404,8 +450,11 @@ var gZenMarketplaceManager = {
         }, 400);
       });
 
-      fragment.querySelector(".zenThemeMarketplaceItemTitle").textContent = modName;
-      fragment.querySelector(".zenThemeMarketplaceItemDescription").textContent = mod.description;
+      fragment.querySelector(".zenThemeMarketplaceItemTitle").textContent =
+        modName;
+      fragment.querySelector(
+        ".zenThemeMarketplaceItemDescription",
+      ).textContent = mod.description;
       fragment
         .querySelector(".zenThemeMarketplaceItemUninstallButton")
         .addEventListener("click", async (event) => {
@@ -421,7 +470,9 @@ var gZenMarketplaceManager = {
         });
 
       if (mod.homepage) {
-        const homepageButton = fragment.querySelector(".zenThemeMarketplaceItemHomepageButton");
+        const homepageButton = fragment.querySelector(
+          ".zenThemeMarketplaceItemHomepageButton",
+        );
         homepageButton.addEventListener("click", () => {
           // open the homepage url in a new tab
           const url = mod.homepage;
@@ -469,7 +520,10 @@ var gZenMarketplaceManager = {
               menulist.setAttribute("sizetopopup", "none");
               menulist.setAttribute("id", property + "-popup-menulist");
 
-              const savedValue = Services.prefs.getStringPref(property, defaultValue ?? "none");
+              const savedValue = Services.prefs.getStringPref(
+                property,
+                defaultValue ?? "none",
+              );
 
               menulist.setAttribute("value", savedValue);
               menulist.setAttribute("tooltiptext", property);
@@ -483,7 +537,7 @@ var gZenMarketplaceManager = {
               } else {
                 browser.document.l10n.setAttributes(
                   defaultItem,
-                  "zen-theme-marketplace-dropdown-default-label"
+                  "zen-theme-marketplace-dropdown-default-label",
                 );
               }
 
@@ -495,7 +549,7 @@ var gZenMarketplaceManager = {
 
                 if (!["string", "number"].includes(valueType)) {
                   console.warn(
-                    `[ZenSettings:ZenMods]: Warning, invalid data type received (${valueType}), skipping.`
+                    `[ZenSettings:ZenMods]: Warning, invalid data type received (${valueType}), skipping.`,
                   );
                   continue;
                 }
@@ -526,13 +580,19 @@ var gZenMarketplaceManager = {
 
                 element.setAttribute(property?.replaceAll(/\./g, "-"), value);
 
-                Services.prefs.setStringPref(property, value === "none" ? "" : value);
+                Services.prefs.setStringPref(
+                  property,
+                  value === "none" ? "" : value,
+                );
                 this._triggerBuildUpdateWithoutRebuild();
               });
 
               const nameLabel = document.createXULElement("label");
               nameLabel.setAttribute("flex", "1");
-              nameLabel.setAttribute("class", "zenThemeMarketplaceItemPreferenceLabel");
+              nameLabel.setAttribute(
+                "class",
+                "zenThemeMarketplaceItemPreferenceLabel",
+              );
               nameLabel.setAttribute("value", label);
               nameLabel.setAttribute("tooltiptext", property);
 
@@ -552,7 +612,7 @@ var gZenMarketplaceManager = {
               `);
 
               const checkboxElement = checkbox.querySelector(
-                ".zenThemeMarketplaceItemPreferenceCheckbox"
+                ".zenThemeMarketplaceItemPreferenceCheckbox",
               );
               checkboxElement.setAttribute("label", label);
               checkboxElement.setAttribute("tooltiptext", property);
@@ -564,7 +624,9 @@ var gZenMarketplaceManager = {
               }
 
               checkboxElement.addEventListener("click", (event) => {
-                const target = event.target.closest(".zenThemeMarketplaceItemPreferenceCheckbox");
+                const target = event.target.closest(
+                  ".zenThemeMarketplaceItemPreferenceCheckbox",
+                );
                 const key = target.getAttribute("zen-pref");
                 const checked = target.hasAttribute("checked");
 
@@ -587,7 +649,10 @@ var gZenMarketplaceManager = {
               container.setAttribute("align", "center");
               container.setAttribute("role", "group");
 
-              const savedValue = Services.prefs.getStringPref(property, defaultValue ?? "");
+              const savedValue = Services.prefs.getStringPref(
+                property,
+                defaultValue ?? "",
+              );
               const sanitizedProperty = property?.replaceAll(/\./g, "-");
 
               const input = document.createElement("input");
@@ -601,7 +666,7 @@ var gZenMarketplaceManager = {
               } else {
                 browser.document.l10n.setAttributes(
                   input,
-                  "zen-theme-marketplace-input-default-placeholder"
+                  "zen-theme-marketplace-input-default-placeholder",
                 );
               }
 
@@ -622,12 +687,15 @@ var gZenMarketplaceManager = {
                       .querySelector(":root")
                       .style.setProperty(`--${sanitizedProperty}`, value);
                   }
-                }, 500)
+                }, 500),
               );
 
               const nameLabel = document.createXULElement("label");
               nameLabel.setAttribute("flex", "1");
-              nameLabel.setAttribute("class", "zenThemeMarketplaceItemPreferenceLabel");
+              nameLabel.setAttribute(
+                "class",
+                "zenThemeMarketplaceItemPreferenceLabel",
+              );
               nameLabel.setAttribute("value", label);
               nameLabel.setAttribute("tooltiptext", property);
 
@@ -641,7 +709,7 @@ var gZenMarketplaceManager = {
 
             default:
               console.warn(
-                `[ZenSettings:ZenMods]: Warning, unknown preference type received (${type}), skipping.`
+                `[ZenSettings:ZenMods]: Warning, unknown preference type received (${type}), skipping.`,
               );
               continue;
           }
@@ -694,7 +762,10 @@ var gZenLooksAndFeel = {
         isExtendedSidebar
       ) {
         layout.classList.add("selected");
-      } else if (layout.getAttribute("layout") == "collapsed" && !isExtendedSidebar) {
+      } else if (
+        layout.getAttribute("layout") == "collapsed" &&
+        !isExtendedSidebar
+      ) {
         layout.classList.add("selected");
       }
     }
@@ -716,9 +787,12 @@ var gZenLooksAndFeel = {
 
         Services.prefs.setBoolPref(
           kZenExtendedSidebar,
-          layout.getAttribute("layout") != "collapsed"
+          layout.getAttribute("layout") != "collapsed",
         );
-        Services.prefs.setBoolPref(kZenSingleToolbar, layout.getAttribute("layout") == "single");
+        Services.prefs.setBoolPref(
+          kZenSingleToolbar,
+          layout.getAttribute("layout") == "single",
+        );
       });
     }
   },
@@ -727,57 +801,42 @@ var gZenLooksAndFeel = {
 var gUmbralAISettings = {
   init() {
     const root = document.getElementById("umbralAISettings");
-    if (!root || this.initialized) {
-      return;
-    }
+    if (!root || this.initialized) return;
     this.initialized = true;
     this.endpoint = document.getElementById("umbralAIEndpoint");
     this.model = document.getElementById("umbralAIModel");
     this.apiKey = document.getElementById("umbralAIKey");
     this.clearKey = document.getElementById("umbralAIClearKey");
     this.enabled = document.getElementById("umbralAIEnabled");
-    this.sendButton = document.getElementById("umbralAISend");
-    this.cancelButton = document.getElementById("umbralAICancel");
-    this.cancelButton.addEventListener("click", () => this.requestAbort?.abort());
-    window.addEventListener("pagehide", () => this.requestAbort?.abort());
-    this.prompt = document.getElementById("umbralAIPrompt");
-    this.conversation = document.getElementById("umbralAIConversation");
-    this.status = document.getElementById("umbralAIChatStatus");
     this.configStatus = document.getElementById("umbralAIConfigStatus");
-
     this.endpoint.value = Services.prefs.getStringPref(
       "umbral.ai.endpoint",
-      ""
+      "",
     );
     this.model.value = Services.prefs.getStringPref("umbral.ai.model", "");
     this.enabled.checked = Services.prefs.getBoolPref(
       "umbral.ai.enabled",
-      false
+      false,
     );
-
-    document.getElementById("umbralAISave").addEventListener("click", () => {
-      this.saveConfiguration();
-    });
-    this.enabled.addEventListener("command", () => {
-      if (!this.enabled.checked) this.requestAbort?.abort();
-      this.updateAvailability();
-    });
-    this.enabled.addEventListener("change", () => this.updateAvailability());
     document
-      .getElementById("umbralAIChatForm")
-      .addEventListener("submit", event => this.sendPrompt(event));
-    this.prompt.addEventListener("input", () => this.updateAvailability());
-    for (const input of [this.endpoint, this.model, this.apiKey, this.clearKey]) {
-      input.addEventListener("input", () => this.updateAvailability());
-    }
+      .getElementById("umbralAISave")
+      .addEventListener("click", () => this.saveConfiguration());
+    this.enabled.addEventListener("command", () => {
+      if (!this.enabled.checked)
+        Services.prefs.setBoolPref("umbral.ai.enabled", false);
+    });
     const enabledObserver = () => {
-      this.enabled.checked = Services.prefs.getBoolPref("umbral.ai.enabled", false);
-      if (!this.enabled.checked) this.requestAbort?.abort();
-      this.updateAvailability();
+      this.enabled.checked = Services.prefs.getBoolPref(
+        "umbral.ai.enabled",
+        false,
+      );
     };
     Services.prefs.addObserver("umbral.ai.enabled", enabledObserver);
-    window.addEventListener("unload", () => Services.prefs.removeObserver("umbral.ai.enabled", enabledObserver), { once: true });
-    this.updateAvailability();
+    window.addEventListener(
+      "unload",
+      () => Services.prefs.removeObserver("umbral.ai.enabled", enabledObserver),
+      { once: true },
+    );
   },
 
   getEndpoint(value) {
@@ -787,37 +846,19 @@ var gUmbralAISettings = {
     } catch {
       return null;
     }
-    const host = endpoint.hostname.toLowerCase();
     if (
       !["http:", "https:"].includes(endpoint.protocol) ||
-      !["localhost", "127.0.0.1", "[::1]"].includes(host) ||
+      !["localhost", "127.0.0.1", "[::1]"].includes(
+        endpoint.hostname.toLowerCase(),
+      ) ||
       endpoint.username ||
       endpoint.password ||
       endpoint.search ||
       endpoint.hash
-    ) {
+    )
       return null;
-    }
     endpoint.pathname = endpoint.pathname.replace(/\/+$/, "");
     return endpoint;
-  },
-
-  updateAvailability() {
-    const endpoint = this.getEndpoint(this.endpoint?.value ?? "");
-    const model = this.model?.value.trim() ?? "";
-    const prompt = this.prompt?.value.trim() ?? "";
-    this.sendButton.disabled =
-      this.busy ||
-      !Services.prefs.getBoolPref("umbral.ai.enabled", false) ||
-      !this.enabled.checked ||
-      !endpoint ||
-      !model ||
-      endpoint.href !== Services.prefs.getStringPref("umbral.ai.endpoint", "") ||
-      model !== Services.prefs.getStringPref("umbral.ai.model", "") ||
-      !!this.apiKey.value ||
-      this.clearKey.checked ||
-      !prompt ||
-      prompt.length > 4000;
   },
 
   async saveConfiguration() {
@@ -827,15 +868,11 @@ var gUmbralAISettings = {
       this.configStatus.dataset.l10nId = "umbral-ai-invalid-config";
       return;
     }
-
     try {
       Services.prefs.setStringPref("umbral.ai.endpoint", endpoint.href);
       Services.prefs.setStringPref("umbral.ai.model", model);
-      if (this.clearKey.checked) {
-        await this.removeAPIKey();
-      } else if (this.apiKey.value) {
-        await this.saveAPIKey(this.apiKey.value);
-      }
+      if (this.clearKey.checked) await this.removeAPIKey();
+      else if (this.apiKey.value) await this.saveAPIKey(this.apiKey.value);
       Services.prefs.setBoolPref("umbral.ai.enabled", this.enabled.checked);
       this.apiKey.value = "";
       this.clearKey.checked = false;
@@ -843,14 +880,13 @@ var gUmbralAISettings = {
     } catch {
       this.configStatus.dataset.l10nId = "umbral-ai-config-error";
     }
-    this.updateAvailability();
   },
 
   async saveAPIKey(value) {
     const LoginInfo = Components.Constructor(
       "@mozilla.org/login-manager/loginInfo;1",
       Ci.nsILoginInfo,
-      "init"
+      "init",
     );
     const login = new LoginInfo(
       "chrome://umbral-ai",
@@ -859,17 +895,15 @@ var gUmbralAISettings = {
       "api-key",
       value,
       "",
-      ""
+      "",
     );
     const existing = await Services.logins.searchLoginsAsync({
       origin: "chrome://umbral-ai",
       httpRealm: "Umbral local AI",
     });
-    if (existing.length) {
+    if (existing.length)
       await Services.logins.modifyLoginAsync(existing[0], login);
-    } else {
-      await Services.logins.addLoginAsync(login);
-    }
+    else await Services.logins.addLoginAsync(login);
   },
 
   async removeAPIKey() {
@@ -877,70 +911,9 @@ var gUmbralAISettings = {
       origin: "chrome://umbral-ai",
       httpRealm: "Umbral local AI",
     });
-    for (const login of logins) {
-      await Services.logins.removeLoginAsync(login);
-    }
-  },
-
-  addConversationEntry(text, className) {
-    const entry = document.createElement("p");
-    entry.className = className;
-    entry.textContent = text;
-    this.conversation.append(entry);
-  },
-
-  async sendPrompt(event) {
-    event.preventDefault();
-    const prompt = this.prompt.value.trim();
-    const endpoint = this.getEndpoint(
-      Services.prefs.getStringPref("umbral.ai.endpoint", "")
-    );
-    const model = Services.prefs.getStringPref("umbral.ai.model", "");
-    if (
-      this.busy ||
-      !Services.prefs.getBoolPref("umbral.ai.enabled", false) ||
-      !this.enabled.checked ||
-      !endpoint ||
-      !model ||
-      !prompt ||
-      prompt.length > 4000
-    ) {
-      return;
-    }
-
-    this.busy = true;
-    this.requestAbort = new AbortController();
-    this.cancelButton.hidden = false;
-    this.addConversationEntry(prompt, "umbral-ai-user-message");
-    this.prompt.value = "";
-    this.updateAvailability();
-    this.status.dataset.l10nId = "umbral-ai-request-pending";
-
-    try {
-      const { requestCompletion } = ChromeUtils.importESModule(
-        "chrome://browser/content/UmbralLocalAI.sys.mjs"
-      );
-      const answer = await requestCompletion(prompt, { signal: this.requestAbort.signal });
-      this.addConversationEntry(answer, "umbral-ai-assistant-message");
-      this.status.removeAttribute("data-l10n-id");
-      this.status.textContent = "";
-    } catch (error) {
-      this.status.dataset.l10nId = this.requestAbort.signal.aborted || !Services.prefs.getBoolPref("umbral.ai.enabled", false)
-        ? "umbral-ai-request-cancelled"
-        : error.name === "AbortError"
-          ? "umbral-ai-request-timeout"
-          : error.name === "UmbralLocalAIResponseError"
-            ? "umbral-ai-response-error"
-            : "umbral-ai-request-error";
-    } finally {
-      this.busy = false;
-      this.cancelButton.hidden = true;
-      this.requestAbort = null;
-      this.updateAvailability();
-    }
+    for (const login of logins) await Services.logins.removeLoginAsync(login);
   },
 };
-
 
 var gZenWorkspacesSettings = {
   init() {
@@ -948,17 +921,27 @@ var gZenWorkspacesSettings = {
       async observe() {
         let buttonIndex = await confirmRestartPrompt(true, 1, true, true);
         if (buttonIndex == CONFIRM_RESTART_PROMPT_RESTART_NOW) {
-          Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart);
+          Services.startup.quit(
+            Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart,
+          );
         }
       },
     };
 
     let toggleZenCycleByAttrWarning = {
       observe() {
-        const warning = document.getElementById("zenTabsCycleByAttributeWarning");
+        const warning = document.getElementById(
+          "zenTabsCycleByAttributeWarning",
+        );
         warning.hidden = !(
-          Services.prefs.getBoolPref("zen.tabs.ctrl-tab.ignore-essential-tabs", false) &&
-          Services.prefs.getBoolPref("browser.ctrlTab.sortByRecentlyUsed", false)
+          Services.prefs.getBoolPref(
+            "zen.tabs.ctrl-tab.ignore-essential-tabs",
+            false,
+          ) &&
+          Services.prefs.getBoolPref(
+            "browser.ctrlTab.sortByRecentlyUsed",
+            false,
+          )
         );
       },
     };
@@ -966,27 +949,42 @@ var gZenWorkspacesSettings = {
     toggleZenCycleByAttrWarning.observe(); // call it once on initial load
 
     Services.prefs.addObserver("zen.glance.enabled", tabsUnloaderPrefListener); // We can use the same listener for both prefs
-    Services.prefs.addObserver("zen.workspaces.separate-essentials", tabsUnloaderPrefListener);
-    Services.prefs.addObserver("zen.window-sync.sync-only-pinned-tabs", tabsUnloaderPrefListener);
+    Services.prefs.addObserver(
+      "zen.workspaces.separate-essentials",
+      tabsUnloaderPrefListener,
+    );
+    Services.prefs.addObserver(
+      "zen.window-sync.sync-only-pinned-tabs",
+      tabsUnloaderPrefListener,
+    );
     Services.prefs.addObserver(
       "zen.tabs.ctrl-tab.ignore-essential-tabs",
-      toggleZenCycleByAttrWarning
+      toggleZenCycleByAttrWarning,
     );
-    Services.prefs.addObserver("browser.ctrlTab.sortByRecentlyUsed", toggleZenCycleByAttrWarning);
+    Services.prefs.addObserver(
+      "browser.ctrlTab.sortByRecentlyUsed",
+      toggleZenCycleByAttrWarning,
+    );
     window.addEventListener("unload", () => {
-      Services.prefs.removeObserver("zen.glance.enabled", tabsUnloaderPrefListener);
-      Services.prefs.removeObserver("zen.workspaces.separate-essentials", tabsUnloaderPrefListener);
+      Services.prefs.removeObserver(
+        "zen.glance.enabled",
+        tabsUnloaderPrefListener,
+      );
+      Services.prefs.removeObserver(
+        "zen.workspaces.separate-essentials",
+        tabsUnloaderPrefListener,
+      );
       Services.prefs.removeObserver(
         "zen.window-sync.sync-only-pinned-tabs",
-        tabsUnloaderPrefListener
+        tabsUnloaderPrefListener,
       );
       Services.prefs.removeObserver(
         "zen.tabs.ctrl-tab.ignore-essential-tabs",
-        toggleZenCycleByAttrWarning
+        toggleZenCycleByAttrWarning,
       );
       Services.prefs.removeObserver(
         "browser.ctrlTab.sortByRecentlyUsed",
-        toggleZenCycleByAttrWarning
+        toggleZenCycleByAttrWarning,
       );
     });
   },
@@ -1039,7 +1037,8 @@ const zenMissingKeyboardShortcutL10n = {
   key_toggleToolbox: "zen-devtools-toggle-shortcut",
   key_browserToolbox: "zen-devtools-toggle-browser-toolbox-shortcut",
   key_browserConsole: "zen-devtools-toggle-browser-console-shortcut",
-  key_responsiveDesignMode: "zen-devtools-toggle-responsive-design-mode-shortcut",
+  key_responsiveDesignMode:
+    "zen-devtools-toggle-responsive-design-mode-shortcut",
   key_inspector: "zen-devtools-toggle-inspector-shortcut",
   key_webconsole: "zen-devtools-toggle-web-console-shortcut",
   key_jsdebugger: "zen-devtools-toggle-js-debugger-shortcut",
@@ -1098,7 +1097,9 @@ var gZenCKSSettings = {
     let buttonIndex = await confirmRestartPrompt(true, 1, true, false);
     if (buttonIndex == CONFIRM_RESTART_PROMPT_RESTART_NOW) {
       await gZenKeyboardShortcutsManager.resetAllShortcuts();
-      Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart);
+      Services.startup.quit(
+        Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart,
+      );
     }
   },
 
@@ -1188,14 +1189,17 @@ var gZenCKSSettings = {
             target.after(
               window.MozXULElement.parseXULToFragment(`
               <label class="${ZEN_CKS_CLASS_BASE}-unsafed" data-l10n-id="zen-key-unsaved"></label>
-            `)
+            `),
             );
             target.value = "Not set";
           }
         } else {
           target.classList.remove(`${ZEN_CKS_INPUT_FIELD_CLASS}-unsafed`);
           const sibling = target.nextElementSibling;
-          if (sibling && sibling.classList.contains(`${ZEN_CKS_CLASS_BASE}-unsafed`)) {
+          if (
+            sibling &&
+            sibling.classList.contains(`${ZEN_CKS_CLASS_BASE}-unsafed`)
+          ) {
             sibling.remove();
           }
         }
@@ -1204,7 +1208,9 @@ var gZenCKSSettings = {
         }
       });
 
-      const groupElem = wrapper.querySelector(`[data-group="${ZEN_CKS_GROUP_PREFIX}-${group}"]`);
+      const groupElem = wrapper.querySelector(
+        `[data-group="${ZEN_CKS_GROUP_PREFIX}-${group}"]`,
+      );
       groupElem.after(fragment);
     }
   },
@@ -1217,7 +1223,11 @@ var gZenCKSSettings = {
 
     if (this._currentActionID) {
       this._editDone();
-      await gZenKeyboardShortcutsManager.setShortcut(this._currentActionID, null, null);
+      await gZenKeyboardShortcutsManager.setShortcut(
+        this._currentActionID,
+        null,
+        null,
+      );
     }
   },
 
@@ -1226,7 +1236,11 @@ var gZenCKSSettings = {
     if (!shortcut || !modifiers) {
       return;
     }
-    gZenKeyboardShortcutsManager.setShortcut(this._currentActionID, shortcut, modifiers);
+    gZenKeyboardShortcutsManager.setShortcut(
+      this._currentActionID,
+      shortcut,
+      modifiers,
+    );
     this._currentActionID = null;
   },
 
@@ -1239,14 +1253,14 @@ var gZenCKSSettings = {
     event.preventDefault();
 
     let input = document.querySelector(
-      `.${ZEN_CKS_INPUT_FIELD_CLASS}[${KEYBIND_ATTRIBUTE_KEY}="${this._currentActionID}"]`
+      `.${ZEN_CKS_INPUT_FIELD_CLASS}[${KEYBIND_ATTRIBUTE_KEY}="${this._currentActionID}"]`,
     );
     const modifiers = new nsKeyShortcutModifiers(
       event.ctrlKey,
       event.altKey,
       event.shiftKey,
       event.metaKey,
-      false
+      false,
     );
     const modifiersActive = modifiers.areAnyActive();
 
@@ -1287,11 +1301,12 @@ var gZenCKSSettings = {
       this._currentActionID = null;
       return;
     } else if (shortcut == "Escape" && !modifiersActive) {
-      const { hasConflicts, conflictShortcut } = gZenKeyboardShortcutsManager.checkForConflicts(
-        this._latestValidKey ? this._latestValidKey : shortcut,
-        this._latestModifier ? this._latestModifier : modifiers,
-        this._currentActionID
-      );
+      const { hasConflicts, conflictShortcut } =
+        gZenKeyboardShortcutsManager.checkForConflicts(
+          this._latestValidKey ? this._latestValidKey : shortcut,
+          this._latestModifier ? this._latestModifier : modifiers,
+          this._currentActionID,
+        );
 
       if (!this._latestValidKey && !this._latestModifier) {
         // todo(lint): This is a bit weird, we need to remove this empty block
@@ -1315,14 +1330,18 @@ var gZenCKSSettings = {
             input.after(
               window.MozXULElement.parseXULToFragment(`
                 <label class="${ZEN_CKS_CLASS_BASE}-conflict" data-l10n-id="zen-key-conflict"></label>
-              `)
+              `),
             );
           }
 
-          document.l10n.setAttributes(input.nextElementSibling, "zen-key-conflict", {
-            group: group ?? "",
-            shortcut: conflictName ?? shortcut ?? "",
-          });
+          document.l10n.setAttributes(
+            input.nextElementSibling,
+            "zen-key-conflict",
+            {
+              group: group ?? "",
+              shortcut: conflictName ?? shortcut ?? "",
+            },
+          );
         }
       } else {
         input.classList.remove(`${ZEN_CKS_INPUT_FIELD_CLASS}-editing`);
@@ -1339,7 +1358,10 @@ var gZenCKSSettings = {
           input.classList.remove(`${ZEN_CKS_INPUT_FIELD_CLASS}-valid`);
         }, 1000);
         const sibling = input.nextElementSibling;
-        if (sibling && sibling.classList.contains(`${ZEN_CKS_CLASS_BASE}-conflict`)) {
+        if (
+          sibling &&
+          sibling.classList.contains(`${ZEN_CKS_CLASS_BASE}-conflict`)
+        ) {
           sibling.remove();
         }
       }
@@ -1353,7 +1375,10 @@ var gZenCKSSettings = {
       this._latestModifier = null;
       this._hasSafed = true;
       const sibling = input.nextElementSibling;
-      if (sibling && sibling.classList.contains(`${ZEN_CKS_CLASS_BASE}-conflict`)) {
+      if (
+        sibling &&
+        sibling.classList.contains(`${ZEN_CKS_CLASS_BASE}-conflict`)
+      ) {
         sibling.remove();
       }
       return;
@@ -1363,7 +1388,9 @@ var gZenCKSSettings = {
     this._hasSafed = false;
     input.classList.remove(`${ZEN_CKS_INPUT_FIELD_CLASS}-invalid`);
     input.classList.remove(`${ZEN_CKS_INPUT_FIELD_CLASS}-not-set`);
-    input.value = modifiers.toDisplayString() + gZenKeyboardShortcutsManager.getKeyDisplay(shortcut);
+    input.value =
+      modifiers.toDisplayString() +
+      gZenKeyboardShortcutsManager.getKeyDisplay(shortcut);
     this._latestValidKey = shortcut;
   },
 };

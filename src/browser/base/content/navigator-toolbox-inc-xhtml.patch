@@ -1,5 +1,5 @@
 diff --git a/browser/base/content/navigator-toolbox.inc.xhtml b/browser/base/content/navigator-toolbox.inc.xhtml
-index 12c237929070194908b4c90481a42752d7099b7b..74fae7ab4155ee69463fea4af9b9562163d0621b 100644
+index d8aeb31..21fb0f0 100644
 --- a/browser/base/content/navigator-toolbox.inc.xhtml
 +++ b/browser/base/content/navigator-toolbox.inc.xhtml
 @@ -2,7 +2,7 @@
@@ -58,3 +58,21 @@ index 12c237929070194908b4c90481a42752d7099b7b..74fae7ab4155ee69463fea4af9b95621
  
    <toolbar id="nav-bar"
             class="browser-toolbar"
+@@ -486,7 +495,16 @@
+                      overflows="false"
+                      removable="false"/>
+     </hbox>
+-
++    <toolbarbutton id="umbral-ai-sidebar-toggle"
++                   class="toolbarbutton-1 chromeclass-toolbar-additional"
++                   data-l10n-id="umbral-ai-sidebar-toggle"
++                   data-l10n-attrs="label,aria-label,tooltiptext"
++                   aria-controls="umbral-ai-sidebar"
++                   aria-expanded="false"
++                   hidden="true"
++                   skipintoolbarset="true"
++                   removable="false"
++                   overflows="false"/>
+     <toolbarbutton id="document-pip-return-to-opener-button" class="toolbarbutton-1"
+                     data-l10n-id="browser-window-return-to-opener"
+                     command="cmd_returnToOpener"/>

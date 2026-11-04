@@ -1,5 +1,5 @@
 diff --git a/browser/base/content/browser-box.inc.xhtml b/browser/base/content/browser-box.inc.xhtml
-index 599313b65c654906f3d52c0852d284937e31d09c..3f72769982199d023067189070abf0a51936b5cd 100644
+index 599313b..ee64cc9 100644
 --- a/browser/base/content/browser-box.inc.xhtml
 +++ b/browser/base/content/browser-box.inc.xhtml
 @@ -3,12 +3,23 @@
@@ -26,7 +26,7 @@ index 599313b65c654906f3d52c0852d284937e31d09c..3f72769982199d023067189070abf0a5
    <vbox id="sidebar-box" hidden="true" class="chromeclass-extrachrome">
      <box id="sidebar-header" align="center">
        <toolbarbutton id="sidebar-switcher-target" class="tabbable" aria-expanded="false">
-@@ -25,7 +36,7 @@
+@@ -25,12 +36,38 @@
      </stack>
    </vbox>
    <splitter id="sidebar-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="none" hidden="true" role="separator" aria-controls="sidebar-box" data-l10n-id="sidebar-resize-splitter"/>
@@ -34,8 +34,33 @@ index 599313b65c654906f3d52c0852d284937e31d09c..3f72769982199d023067189070abf0a5
 +#include zen-tabbrowser-elements.inc.xhtml
      <tabpanels id="tabbrowser-tabpanels" flex="1" selectedIndex="0"/>
    </tabbox>
++  <splitter id="umbral-ai-sidebar-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="sibling" collapsed="true" role="separator" aria-controls="umbral-ai-sidebar" data-l10n-id="umbral-ai-sidebar-resize"/>
++  <vbox id="umbral-ai-sidebar" class="chromeclass-extrachrome umbral-ai-sidebar" collapsed="true" width="360" minwidth="280" maxwidth="640" persist="width" role="region" aria-labelledby="umbral-ai-sidebar-title">
++    <hbox class="umbral-ai-sidebar-header" align="center">
++      <label id="umbral-ai-sidebar-title" data-l10n-id="umbral-ai-sidebar-title" flex="1"/>
++      <toolbarbutton id="umbral-ai-sidebar-clear" class="toolbarbutton-1" data-l10n-id="umbral-ai-sidebar-clear"/>
++      <toolbarbutton id="umbral-ai-sidebar-close" class="toolbarbutton-1" data-l10n-id="umbral-ai-sidebar-close"/>
++    </hbox>
++    <vbox id="umbral-ai-sidebar-unconfigured" class="umbral-ai-sidebar-unconfigured" flex="1" align="center" pack="center">
++      <description data-l10n-id="umbral-ai-sidebar-unconfigured-text"/>
++      <button id="umbral-ai-sidebar-configure" class="primary" data-l10n-id="umbral-ai-sidebar-configure"/>
++    </vbox>
++    <vbox id="umbral-ai-sidebar-conversation" class="umbral-ai-sidebar-conversation" role="log" aria-live="polite" aria-relevant="additions text" flex="1"/>
++    <vbox id="umbral-ai-sidebar-form-container" flex="1">
++    <html:form id="umbral-ai-sidebar-form" class="umbral-ai-sidebar-form">
++      <html:label for="umbral-ai-sidebar-prompt" data-l10n-id="umbral-ai-prompt-label"/>
++      <html:textarea id="umbral-ai-sidebar-prompt" rows="4" maxlength="4000" autocomplete="off"/>
++      <hbox>
++        <html:button id="umbral-ai-sidebar-send" type="submit" data-l10n-id="umbral-ai-send" disabled="disabled"/>
++        <html:button id="umbral-ai-sidebar-cancel" type="button" data-l10n-id="umbral-ai-cancel" hidden="hidden"/>
++      </hbox>
++      <html:p id="umbral-ai-sidebar-status" role="status" aria-live="polite"/>
++    </html:form>
++    </vbox>
++  </vbox>
    <splitter id="ai-window-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="sibling" collapsed="true"/>
-@@ -34,3 +45,5 @@
+   <vbox id="ai-window-box" collapsed="true" class="chromeclass-extrachrome ai-window-right-sidebar">
+     <stack class="ai-window-browser-stack" flex="1">
      </stack>
    </vbox>
  </hbox>

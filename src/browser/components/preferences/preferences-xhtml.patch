@@ -1,17 +1,17 @@
 diff --git a/browser/components/preferences/preferences.xhtml b/browser/components/preferences/preferences.xhtml
-index e8da75f2c2..93418dc19b 100644
 --- a/browser/components/preferences/preferences.xhtml
 +++ b/browser/components/preferences/preferences.xhtml
-@@ -39,6 +39,8 @@
+@@ -38,6 +38,8 @@
+   <link rel="stylesheet" href="chrome://browser/content/preferences/widgets/setting-group.css" />
    <link rel="stylesheet" href="chrome://browser/content/preferences/widgets/setting-pane.css" />
    <link rel="stylesheet" href="chrome://browser/content/preferences/widgets/setting-control.css" />
- 
++
 +#include zen-preferences-links.xhtml
+-
 +
    <link rel="localization" href="branding/brand.ftl"/>
    <link rel="localization" href="browser/browser.ftl"/>
-     <!-- Used by fontbuilder.js -->
-@@ -121,6 +123,31 @@
+@@ -121,11 +123,35 @@
          iconsrc="chrome://browser/skin/preferences/category-general.svg"
          data-l10n-id="pane-general-title">
        </html:moz-page-nav-button>
@@ -41,9 +41,16 @@ index e8da75f2c2..93418dc19b 100644
 +        data-l10n-id="umbral-ai-pane-title">
 +      </html:moz-page-nav-button>
        <html:moz-page-nav-button id="category-sync"
-         hidden="true"
+-        hidden="true"
          view="paneSync"
-@@ -257,6 +284,22 @@
+-        iconsrc="chrome://browser/skin/preferences/category-sync.svg"
+-        data-l10n-id="pane-sync-title3">
++        iconsrc="chrome://browser/skin/preferences/category-general.svg"
++        data-l10n-id="pane-general-title">
+       </html:moz-page-nav-button>
+       <html:moz-page-nav-button id="category-home"
+         view="paneHome"
+@@ -257,6 +283,22 @@
  #include privacy.inc.xhtml
  #include sync.inc.xhtml
  #include moreFromMozilla.inc.xhtml

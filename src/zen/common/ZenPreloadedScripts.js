@@ -48,6 +48,7 @@
   let scripts = [
     "chrome://browser/content/ZenStartup.mjs",
     "chrome://browser/content/UmbralBrowserChrome.mjs",
+    "chrome://browser/content/UmbralLocalAISidebar.sys.mjs",
     "resource:///modules/zen/ZenSpaceManager.mjs",
     "chrome://browser/content/zen-components/ZenCompactMode.mjs",
     "chrome://browser/content/ZenUIManager.mjs",

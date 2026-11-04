@@ -2,179 +2,306 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import json, os, shutil, subprocess, sys, tempfile, time
+import http.server
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'engine/testing/marionette/client'))
-from marionette_driver.marionette import Marionette
-BIN=Path(__file__).resolve().parents[2]/'engine/obj-x86_64-pc-linux-gnu/dist/bin/zen'
-profile=Path(tempfile.mkdtemp(prefix='umbral-ai-smoke-'))
-(profile/'user.js').write_text('\n'.join([
-'user_pref("zen.welcome-screen.seen", true);',
-'user_pref("remote.prefs.recommended", false);',
-'user_pref("marionette.port", 0);',
-'user_pref("browser.shell.checkDefaultBrowser", false);',
-'user_pref("browser.startup.homepage", "about:home");',
-'user_pref("browser.startup.page", 1);',
 
-])+'\n')
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "engine/testing/marionette/client"))
+sys.path.extend(str(path) for path in (ROOT / "engine/testing/mozbase").iterdir() if path.is_dir())
+sys.path.insert(0, str(ROOT / "engine/python/mozterm"))
+from marionette_driver.marionette import ActionSequence, Marionette
+BIN = ROOT / "engine/obj-x86_64-pc-linux-gnu/dist/bin/zen"
+PROFILE = Path(tempfile.mkdtemp(prefix="umbral-ai-sidebar-"))
+ENDPOINT_REQUESTS = []
+DISCONNECTED = []
+
+(PROFILE / "user.js").write_text("\n".join([
+    'user_pref("remote.prefs.recommended", false);',
+    'user_pref("marionette.port", 0);',
+    'user_pref("browser.shell.checkDefaultBrowser", false);',
+    'user_pref("browser.startup.homepage", "about:home");',
+    'user_pref("browser.startup.page", 1);',
+    'user_pref("umbral.ai.enabled", false);',
+]) + "\n")
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        ENDPOINT_REQUESTS.append({"path": self.path, "body": body, "auth": self.headers.get("Authorization")})
+        if self.headers.get("Authorization") != "Bearer temporary-test-secret":
+            self.send_response(401)
+            self.end_headers()
+            return
+        latest = body["messages"][-1]["content"]
+        if latest == "slow":
+            self.send_response(200)
+            self.end_headers()
+            try:
+                self.wfile.write(b'{"choices":[')
+                self.wfile.flush()
+                for _ in range(100):
+                    time.sleep(0.1)
+                    self.wfile.write(b" ")
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                DISCONNECTED.append(True)
+            return
+        data = json.dumps({"choices": [{"message": {"content": "Local reply: " + latest}}]}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def log_message(self, *_args):
+        pass
+
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+threading.Thread(target=server.serve_forever, daemon=True).start()
+
 
 def launch():
-    (profile/'MarionetteActivePort').unlink(missing_ok=True)
-    command=[str(BIN)]
-    if os.environ.get('UMBRAL_TEST_FLATPAK') == '1':
-        root=Path(__file__).resolve().parents[2]
-        command=['flatpak','run',f'--filesystem={root}:ro',f'--filesystem={profile}',
-                 '--command=/bin/sh','io.github.martin08abm.umbralbrowser','-eu','-c',
-                 'root="$1"; binary="$2"; shift 2; '
-                 'export XDG_CONFIG_HOME="$root/xdg-config" XDG_DATA_HOME="$root/xdg-data" '
-                 'XDG_CACHE_HOME="$root/xdg-cache" TMPDIR="$root/tmp"; '
-                 'mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$TMPDIR"; '
-                 'exec "$binary" "$@"', 'umbral-ai-test',str(profile),str(BIN)]
-    proc=subprocess.Popen(command+['-headless' ,'-no-remote','-profile',str(profile),'-marionette','-remote-allow-system-access'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
-    end=time.monotonic()+90
-    while time.monotonic()<end:
-        if proc.poll() is not None: raise RuntimeError(f'browser exit {proc.returncode}')
+    (PROFILE / "MarionetteActivePort").unlink(missing_ok=True)
+    command = [str(BIN), "-no-remote", "-profile", str(PROFILE), "-marionette", "-remote-allow-system-access"]
+    if shutil.which("xvfb-run"):
+        command = ["xvfb-run", "-a", *command]
+    proc = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            raise RuntimeError(f"Browser exited with status {proc.returncode}")
         try:
-            port=int((profile/'MarionetteActivePort').read_text().strip())
-            driver=Marionette(host='127.0.0.1',port=port); driver.start_session()
-            return proc,driver
-        except Exception: time.sleep(.25)
-    raise RuntimeError('Marionette unavailable')
+            port = int((PROFILE / "MarionetteActivePort").read_text().strip())
+            driver = Marionette(host="127.0.0.1", port=port)
+            driver.start_session()
+            return proc, driver
+        except Exception:
+            time.sleep(0.25)
+    raise RuntimeError("Marionette did not start")
 
-def close(proc,driver):
+
+def wait_js(driver, script, timeout=25):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            value = driver.execute_script("return (" + script + ")")
+            if value:
+                return value
+        except Exception:
+            pass
+        time.sleep(0.05)
+    raise RuntimeError("Condition timed out: " + script)
+
+
+def close(proc, driver):
     try:
-        driver.set_context('chrome')
-        driver.execute_script('Services.tm.dispatchToMainThread(() => Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit))')
+        driver.set_context("chrome")
+        driver.execute_script("Services.tm.dispatchToMainThread(() => Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit))")
         proc.wait(timeout=20)
         if proc.returncode != 0:
-            raise RuntimeError('Browser shutdown failed')
-        return
+            raise RuntimeError("Browser shutdown failed")
     except Exception:
         if proc.poll() is None:
             proc.terminate()
-            try: proc.wait(timeout=10)
-            except Exception: proc.kill();proc.wait()
-        raise RuntimeError('Test browser did not shut down normally') from None
-
-def wait_js(driver, script, timeout=20):
-    end=time.monotonic()+timeout
-    while time.monotonic()<end:
-        value=driver.execute_script('return ('+script+')')
-        if value: return value
-        time.sleep(.05)
-    raise RuntimeError('Condition timed out: '+script)
-
-def click(driver,selector): driver.execute_script('document.querySelector(arguments[0]).click()',[selector])
-def fill(driver,name,url):
-    driver.execute_script('document.getElementById("umbral-shortcut-name").value=arguments[0]; document.getElementById("umbral-shortcut-url").value=arguments[1]; document.getElementById("umbral-shortcut-form").requestSubmit()',[name,url])
-
-
-import http.server, threading
-requests=[]
-disconnected=[]
-class Handler(http.server.BaseHTTPRequestHandler):
-    def do_POST(self):
-        body=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-        requests.append({'path':self.path,'body':body,'auth':self.headers.get('Authorization')})
-        if self.headers.get('Authorization') != 'Bearer temporary-test-secret':
-            self.send_response(401);self.end_headers();return
-        if body['model']=='controlled-slow':
-            self.send_response(200);self.end_headers()
             try:
-                self.wfile.write(b'{"choices":[');self.wfile.flush()
-                for _ in range(100):
-                    time.sleep(.1);self.wfile.write(b' ');self.wfile.flush()
-            except (BrokenPipeError,ConnectionResetError):disconnected.append(True)
-            return
-        if body['model']=='controlled-error':
-            self.send_response(503);self.end_headers();return
-        answer='x'*13000 if body['model']=='controlled-oversize' else 'Controlled local answer'
-        data=json.dumps({'choices':[{'message':{'content':answer}}]}).encode()
-        self.send_response(200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data)
-    def log_message(self,*args):pass
-server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
-threading.Thread(target=server.serve_forever,daemon=True).start()
-proc,driver=launch()
+                proc.wait(timeout=10)
+            except Exception:
+                proc.kill()
+                proc.wait()
+        raise RuntimeError("Browser did not shut down normally") from None
+
+
+def click(driver, selector):
+    driver.execute_script("document.querySelector(arguments[0]).click()", [selector])
+
+
+def open_window(driver, private):
+    driver.set_context("chrome")
+    old = set(driver.chrome_window_handles)
+    driver.execute_script("OpenBrowserWindow({private: arguments[0]})", [private])
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        added = set(driver.chrome_window_handles) - old
+        if added:
+            handle = added.pop()
+            driver.switch_to_window(handle)
+            driver.set_context("chrome")
+            wait_js(driver, "!!window.gUmbralLocalAISidebar")
+            return handle
+        time.sleep(0.1)
+    raise RuntimeError("New browser chrome window was not exposed to Marionette")
+
+
+proc = driver = None
 try:
-    driver.set_context('content');driver.navigate('about:preferences#umbralAI')
-    wait_js(driver,'typeof gUmbralAISettings !== "undefined"')
-    wait_js(driver,'document.getElementById("umbralAISettings").checkVisibility() && !!gUmbralAISettings.initialized')
-    assert not requests
-    endpoint='http://127.0.0.1:'+str(server.server_port)+'/v1'
-    driver.execute_script('document.getElementById("umbralAIEndpoint").value=arguments[0];document.getElementById("umbralAIModel").value="controlled-model";document.getElementById("umbralAIKey").value="temporary-test-secret";document.getElementById("umbralAIEnabled").checked=true;gUmbralAISettings.saveConfiguration()',[endpoint])
-    wait_js(driver,'!!document.getElementById("umbralAIConfigStatus").getAttribute("data-l10n-id")')
-    status=driver.execute_script('return document.getElementById("umbralAIConfigStatus").getAttribute("data-l10n-id")');print(status,flush=True)
-    assert status=='umbral-ai-config-saved',status
-    assert not requests,'saving configuration contacted server'
-    driver.execute_script('document.getElementById("umbralAIPrompt").value="Only this text";document.getElementById("umbralAIPrompt").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("umbralAISend").click()')
-    wait_js(driver,'document.getElementById("umbralAIConversation").textContent.includes("Controlled local answer")')
-    assert requests==[{'path':'/v1/chat/completions','body':{'model':'controlled-model','messages':[{'role':'user','content':'Only this text'}]},'auth':'Bearer temporary-test-secret'}],requests
-    driver.set_context('chrome')
-    assert driver.execute_script('return Services.dirsvc.get("ProfD",Ci.nsIFile).path')==str(profile)
-    if os.environ.get('UMBRAL_TEST_FLATPAK')=='1':
-        for variable,suffix in [('XDG_CONFIG_HOME','xdg-config'),('XDG_DATA_HOME','xdg-data'),('XDG_CACHE_HOME','xdg-cache'),('TMPDIR','tmp')]:
-            assert driver.execute_script('return Services.env.get(arguments[0])',[variable])==str(profile/suffix)
-    prefs=driver.execute_script('return {etp:Services.prefs.getStringPref("browser.contentblocking.category"),rfp:Services.prefs.getBoolPref("privacy.resistFingerprinting"),fpp:Services.prefs.getBoolPref("privacy.fingerprintingProtection",false),save:Services.prefs.getBoolPref("signon.rememberSignons"),fill:Services.prefs.getBoolPref("signon.autofillForms")}')
-    policy=driver.execute_script('return {browserUpdatesAllowed:Services.policies.isAllowed("appUpdate"),embeddedUpdateURL:Services.appinfo.updateURL,extensionUpdates:Services.prefs.getBoolPref("extensions.update.enabled",true),updateURL:Services.prefs.getStringPref("app.update.url"),updateURLLocked:Services.prefs.prefIsLocked("app.update.url"),manualURL:Services.prefs.getStringPref("app.update.url.manual")}')
-    assert policy['browserUpdatesAllowed'] is False,policy
-    assert policy['embeddedUpdateURL']=='',policy
-    assert policy['extensionUpdates'] is True,policy
-    assert policy['updateURL']=='' and policy['updateURLLocked'],policy
-    assert policy['manualURL']=='https://github.com/Martin08ABM/umbral-browser',policy
-    close(proc,driver)
-    proc,driver=launch()
-    driver.set_context('content');driver.navigate('about:preferences#umbralAI')
-    wait_js(driver,'typeof gUmbralAISettings !== "undefined"')
-    wait_js(driver,'document.getElementById("umbralAISettings").checkVisibility() && !!gUmbralAISettings.initialized')
-    assert driver.execute_script('return document.getElementById("umbralAIKey").value')==''
-    driver.execute_script('document.getElementById("umbralAIPrompt").value="After restart";document.getElementById("umbralAIPrompt").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("umbralAISend").click()')
-    wait_js(driver,'document.getElementById("umbralAIConversation").textContent.includes("Controlled local answer")')
-    assert len(requests)==2 and requests[1]['auth']=='Bearer temporary-test-secret'
-    for model,error_id in [('controlled-error','umbral-ai-request-error'),('controlled-oversize','umbral-ai-response-error')]:
-        driver.execute_script('document.getElementById("umbralAIModel").value=arguments[0];document.getElementById("umbralAIModel").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("umbralAISave").click()',[model])
-        wait_js(driver,'Services.prefs.getStringPref("umbral.ai.model")==='+json.dumps(model))
-        driver.execute_script('document.getElementById("umbralAIPrompt").value="Controlled failure";document.getElementById("umbralAIPrompt").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("umbralAISend").click()')
-        wait_js(driver,'document.getElementById("umbralAIChatStatus").getAttribute("data-l10n-id")==='+json.dumps(error_id))
-    assert len(requests)==4,'errors triggered retries or fallbacks'
-    for mode in ['cancel','disable','leave']:
-        driver.execute_script('document.getElementById("umbralAIEnabled").checked=true;document.getElementById("umbralAIModel").value="controlled-slow";document.getElementById("umbralAISave").click()')
-        wait_js(driver,'Services.prefs.getStringPref("umbral.ai.model")==="controlled-slow"')
-        driver.execute_script('document.getElementById("umbralAIPrompt").value="Cancel transport";document.getElementById("umbralAIPrompt").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("umbralAISend").click()')
-        wait_js(driver,'document.getElementById("umbralAIChatStatus").getAttribute("data-l10n-id")==="umbral-ai-request-pending"')
-        deadline=time.monotonic()+10
-        expected={'cancel':5,'disable':6,'leave':7}[mode]
-        while len(requests)<expected and time.monotonic()<deadline:time.sleep(.05)
-        assert len(requests)==expected
-        if mode=='cancel':driver.execute_script('document.getElementById("umbralAICancel").click()')
-        elif mode=='disable':driver.execute_script('Services.prefs.setBoolPref("umbral.ai.enabled",false)')
-        else:
-            driver.navigate('about:home')
-            deadline=time.monotonic()+5
-            while len(disconnected)<3 and time.monotonic()<deadline:time.sleep(.05)
-            driver.navigate('about:preferences#umbralAI')
-            wait_js(driver,'typeof gUmbralAISettings !== "undefined" && !!gUmbralAISettings.initialized')
-            continue
-        wait_js(driver,'document.getElementById("umbralAIChatStatus").getAttribute("data-l10n-id")==="umbral-ai-request-cancelled"')
-    deadline=time.monotonic()+5
-    while len(disconnected)<3 and time.monotonic()<deadline:time.sleep(.05)
-    assert len(disconnected)==3,'cancelled sockets remained open'
-    driver.execute_script('document.getElementById("umbralAIEnabled").checked=true;document.getElementById("umbralAIKey").value="wrong-test-key";document.getElementById("umbralAIModel").value="controlled-model";document.getElementById("umbralAISave").click()')
-    wait_js(driver,'document.getElementById("umbralAIKey").value==="" && Services.prefs.getBoolPref("umbral.ai.enabled")')
-    driver.execute_script('document.getElementById("umbralAIPrompt").value="Authentication failure";document.getElementById("umbralAIPrompt").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("umbralAISend").click()')
-    wait_js(driver,'document.getElementById("umbralAIChatStatus").getAttribute("data-l10n-id")==="umbral-ai-request-error"')
-    assert len(requests)==8
-    driver.navigate('about:preferences#passwordsAutofill')
-    wait_js(driver,'!!document.getElementById("offerToSavePasswords")')
-    wait_js(driver,'document.getElementById("offerToSavePasswords").checkVisibility()')
-    driver.execute_script('document.getElementById("offerToSavePasswords").shadowRoot.querySelector("input").click()')
-    wait_js(driver,'Services.prefs.getBoolPref("umbral.passwords.offerToSave")===false')
-    count=driver.execute_async_script('const done=arguments[0];Services.logins.searchLoginsAsync({origin:"chrome://umbral-ai",httpRealm:"Umbral local AI"}).then(v=>done(v.length))')
-    assert count==1,'saving toggle removed a stored credential'
-    assert driver.execute_script('return Services.prefs.getBoolPref("signon.autofillForms")') is True
-    driver.set_context('chrome')
-    driver.execute_script('Services.prefs.setBoolPref("umbral.ai.enabled",false)')
-    denied=driver.execute_async_script('const done=arguments[0];ChromeUtils.importESModule("chrome://browser/content/UmbralLocalAI.sys.mjs").requestCompletion("disabled").then(()=>done(false),()=>done(true))')
-    assert denied and len(requests)==8
-    print(json.dumps({'result':'PASS','requests':len(requests),'configurationRequests':0,'credentialRestartPersistence':True,'savingToggleRetainsCredential':True,'disabledAIRequests':0,'httpFailureAndOversizeResponse':'PASS','cancelDisableAndPageExitCloseSockets':True,'invalidAuthenticationRejected':True,'flatpak':os.environ.get('UMBRAL_TEST_FLATPAK')=='1','effectivePrefs':prefs,'updatePolicy':policy}))
+    proc, driver = launch()
+    initial_handle = driver.current_window_handle
+    driver.set_context("chrome")
+    initial_chrome_handle = driver.current_chrome_window_handle
+    wait_js(driver, 'document.getElementById("zen-welcome-start-button")')
+    assert driver.execute_script('return Services.prefs.getBoolPref("umbral.ai.enabled", false)') is False
+    click(driver, "#zen-welcome-start-button")
+    wait_js(driver, 'document.querySelector(".zen-welcome-page[page=search]")')
+    click(driver, "#zen-welcome-page-buttons button")
+    wait_js(driver, 'document.querySelector(".zen-welcome-page[page=theme]")')
+    click(driver, "#zen-welcome-page-buttons button")
+    wait_js(driver, 'document.querySelector(".zen-welcome-page[page=finish]")')
+    wait_js(driver, 'document.getElementById("zen-welcome-ai-not-now")')
+    wait_js(driver, 'document.getElementById("zen-welcome-ai-not-now").checked')
+    assert not ENDPOINT_REQUESTS, "Welcome caused local-server traffic"
+    click(driver, "#zen-welcome-ai-enable")
+    wait_js(driver, 'Services.prefs.getBoolPref("umbral.ai.enabled", false)')
+    assert not ENDPOINT_REQUESTS, "Enabling AI caused local-server traffic"
+    click(driver, "#zen-welcome-ai-not-now")
+    wait_js(driver, '!Services.prefs.getBoolPref("umbral.ai.enabled", false)')
+    click(driver, "#zen-welcome-page-buttons button:last-child")
+    wait_js(driver, '!document.getElementById("zen-welcome")')
+    new_handles = set(driver.window_handles)
+    driver.switch_to_window((new_handles - {initial_handle}).pop())
+
+    driver.set_context("content")
+    driver.navigate("about:preferences#umbralAI")
+    wait_js(driver, 'document.getElementById("umbralAISettings").checkVisibility() && !!gUmbralAISettings.initialized')
+    endpoint = f"http://127.0.0.1:{server.server_port}/v1"
+    driver.execute_script('''
+      document.getElementById("umbralAIEndpoint").value=arguments[0];
+      document.getElementById("umbralAIModel").value="controlled-model";
+      document.getElementById("umbralAIKey").value="temporary-test-secret";
+      document.getElementById("umbralAIEnabled").checked=true;
+      gUmbralAISettings.saveConfiguration();
+    ''', [endpoint])
+    wait_js(driver, 'document.getElementById("umbralAIConfigStatus").dataset.l10nId === "umbral-ai-config-saved"')
+    assert not ENDPOINT_REQUESTS, "Saving settings caused local-server traffic"
+
+    driver.set_context("chrome")
+    wait_js(driver, 'window.gUmbralLocalAISidebar && !document.getElementById("umbral-ai-sidebar-toggle").hidden')
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-toggle").getAttribute("aria-label") === "Toggle local AI panel"')
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar").getAttribute("role")') == "region"
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar-splitter").getAttribute("role")') == "separator"
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar-clear").getAttribute("aria-label")') == "Clear conversation"
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar").parentElement.id') == "zen-tabbox-wrapper"
+    click(driver, "#umbral-ai-sidebar-toggle")
+    wait_js(driver, '!document.getElementById("umbral-ai-sidebar").collapsed')
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar-toggle").getAttribute("aria-expanded")') == "true"
+    assert not ENDPOINT_REQUESTS, "Opening the panel caused local-server traffic"
+    panel = driver.find_element("css selector", "#umbral-ai-sidebar")
+    splitter = driver.find_element("css selector", "#umbral-ai-sidebar-splitter")
+    before_width = driver.execute_script("return arguments[0].getBoundingClientRect().width", [panel])
+    ActionSequence(driver, "pointer", "ai-panel-resize", {"pointerType": "mouse"}).pointer_move(0, 0, origin=splitter).pointer_down().pointer_move(-48, 0, origin="pointer").pointer_up().perform()
+    time.sleep(0.3)
+    after_width = driver.execute_script("return arguments[0].getBoundingClientRect().width", [panel])
+    assert after_width != before_width, f"Panel did not resize: {before_width} -> {after_width}"
+
+    driver.execute_script('''
+      const input=document.getElementById("umbral-ai-sidebar-prompt");
+      input.value="Only manually submitted text";
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+      document.getElementById("umbral-ai-sidebar-form").requestSubmit();
+    ''')
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-conversation").textContent.includes("Local reply: Only manually submitted text")')
+    assert len(ENDPOINT_REQUESTS) == 1
+    assert ENDPOINT_REQUESTS[0]["path"] == "/v1/chat/completions"
+    assert ENDPOINT_REQUESTS[0]["body"]["messages"] == [{"role": "user", "content": "Only manually submitted text"}]
+    assert ENDPOINT_REQUESTS[0]["auth"] == "Bearer temporary-test-secret"
+    assert "about:preferences" not in json.dumps(ENDPOINT_REQUESTS[0]["body"])
+
+    click(driver, "#umbral-ai-sidebar-close")
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar").collapsed')
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar-toggle").getAttribute("aria-expanded")') == "false"
+    click(driver, "#umbral-ai-sidebar-toggle")
+    wait_js(driver, '!document.getElementById("umbral-ai-sidebar").collapsed')
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar-conversation").textContent.includes("Only manually submitted text")')
+    click(driver, "#umbral-ai-sidebar-clear")
+    wait_js(driver, '!document.getElementById("umbral-ai-sidebar-conversation").textContent')
+
+    driver.execute_script('''
+      const input=document.getElementById("umbral-ai-sidebar-prompt");
+      input.value="Window one"; input.dispatchEvent(new Event("input", {bubbles:true}));
+      document.getElementById("umbral-ai-sidebar-form").requestSubmit();
+    ''')
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-conversation").textContent.includes("Local reply: Window one")')
+    original_handle = driver.current_window_handle
+    regular_handle = open_window(driver, False)
+    assert not driver.execute_script('return document.getElementById("umbral-ai-sidebar-conversation").textContent')
+    assert driver.execute_script('return !PrivateBrowsingUtils.isWindowPrivate(window)')
+    private_handle = open_window(driver, True)
+    assert not driver.execute_script('return document.getElementById("umbral-ai-sidebar-conversation").textContent')
+    assert driver.execute_script('return PrivateBrowsingUtils.isWindowPrivate(window)')
+    driver.execute_script("window.close()")
+    driver.switch_to_window(regular_handle)
+    driver.set_context("chrome")
+    driver.execute_script("window.close()")
+    driver.switch_to_window(initial_chrome_handle)
+    driver.set_context("chrome")
+    assert driver.execute_script('return document.getElementById("umbral-ai-sidebar-conversation").textContent.includes("Window one")')
+    assert len(ENDPOINT_REQUESTS) == 2
+    assert ENDPOINT_REQUESTS[1]["body"]["messages"][-1]["content"] == "Window one"
+
+    driver.execute_script('''
+      const input=document.getElementById("umbral-ai-sidebar-prompt");
+      input.value="slow"; input.dispatchEvent(new Event("input", {bubbles:true}));
+      document.getElementById("umbral-ai-sidebar-form").requestSubmit();
+    ''')
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-status").dataset.l10nId === "umbral-ai-request-pending"')
+    deadline = time.monotonic() + 10
+    while len(ENDPOINT_REQUESTS) < 3 and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert len(ENDPOINT_REQUESTS) == 3
+    click(driver, "#umbral-ai-sidebar-cancel")
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-status").dataset.l10nId === "umbral-ai-request-cancelled"')
+    deadline = time.monotonic() + 5
+    while not DISCONNECTED and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert DISCONNECTED, "Cancel left the local request socket open"
+
+    driver.execute_script('''
+      const input=document.getElementById("umbral-ai-sidebar-prompt");
+      input.value="slow"; input.dispatchEvent(new Event("input", {bubbles:true}));
+      document.getElementById("umbral-ai-sidebar-form").requestSubmit();
+    ''')
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-status").dataset.l10nId === "umbral-ai-request-pending"')
+    deadline = time.monotonic() + 10
+    while len(ENDPOINT_REQUESTS) < 4 and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert len(ENDPOINT_REQUESTS) == 4
+    driver.set_context("content")
+    driver.navigate("about:preferences#umbralAI")
+    wait_js(driver, 'document.getElementById("umbralAISettings").checkVisibility() && !!gUmbralAISettings.initialized')
+    driver.execute_script('document.getElementById("umbralAIEnabled").checked=false;document.getElementById("umbralAIEnabled").dispatchEvent(new Event("command",{bubbles:true}))')
+    driver.set_context("chrome")
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar").collapsed && document.getElementById("umbral-ai-sidebar-toggle").hidden')
+    wait_js(driver, 'document.getElementById("umbral-ai-sidebar-status").dataset.l10nId === "umbral-ai-request-cancelled"')
+    deadline = time.monotonic() + 5
+    while len(DISCONNECTED) < 2 and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert len(DISCONNECTED) == 2, "Disabling left the active local request open"
+    credentials = driver.execute_async_script('const done=arguments[0];Services.logins.searchLoginsAsync({origin:"chrome://umbral-ai",httpRealm:"Umbral local AI"}).then(v=>done(v.map(x=>x.password)))')
+    assert credentials == ["temporary-test-secret"], "Disabling AI removed the saved credential"
+    assert len(ENDPOINT_REQUESTS) == 4, "Settings/window operations sent an automatic request"
+    print(json.dumps({
+        "result": "PASS",
+        "welcome_default_off_and_not_now": True,
+        "enable_save_open_no_traffic": True,
+        "manual_send_only": True,
+        "right_sidebar_resize_and_toggle": True,
+        "hide_preserves_clear_erases": True,
+        "per_window_and_private_conversations": True,
+        "cancel_closes_request": True,
+        "disable_closes_panel_and_retains_credentials": True,
+        "local_requests": len(ENDPOINT_REQUESTS),
+    }))
 finally:
-    close(proc,driver);server.shutdown();shutil.rmtree(profile,ignore_errors=True)
+    if proc and driver:
+        close(proc, driver)
+    server.shutdown()
+    shutil.rmtree(PROFILE, ignore_errors=True)

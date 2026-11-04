@@ -4,7 +4,24 @@
 
 import { setTimeout, clearTimeout } from "resource://gre/modules/Timer.sys.mjs";
 
-export async function requestCompletion(prompt, { signal } = {}) {
+export function hasLocalAIConfiguration() {
+  try {
+    const endpoint = new URL(
+      Services.prefs.getStringPref("umbral.ai.endpoint", ""),
+    );
+    const model = Services.prefs.getStringPref("umbral.ai.model", "");
+    return (
+      ["http:", "https:"].includes(endpoint.protocol) &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname) &&
+      !endpoint.username && !endpoint.password && !endpoint.search &&
+      !endpoint.hash && !!model.trim() && model.length <= 80
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function requestCompletion(prompt, { signal, messages } = {}) {
   if (
     !Services.prefs.getBoolPref("umbral.ai.enabled", false) ||
     typeof prompt !== "string" ||
@@ -13,21 +30,34 @@ export async function requestCompletion(prompt, { signal } = {}) {
   ) {
     throw new Error("Local assistant unavailable");
   }
-  const endpoint = new URL(
-    Services.prefs.getStringPref("umbral.ai.endpoint", "")
-  );
-  const model = Services.prefs.getStringPref("umbral.ai.model", "");
-  if (
-    !["http:", "https:"].includes(endpoint.protocol) ||
-    !["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname) ||
-    endpoint.username ||
-    endpoint.password ||
-    endpoint.search ||
-    endpoint.hash ||
-    !model ||
-    model.length > 80
-  ) {
+  if (!hasLocalAIConfiguration()) {
     throw new Error("Invalid local assistant configuration");
+  }
+  const endpoint = new URL(Services.prefs.getStringPref("umbral.ai.endpoint", ""));
+  const model = Services.prefs.getStringPref("umbral.ai.model", "");
+  const requestMessages = Array.isArray(messages)
+    ? messages
+    : [{ role: "user", content: prompt }];
+  const validMessages =
+    requestMessages.length > 0 &&
+    requestMessages.length <= 40 &&
+    requestMessages.every(
+      (message) =>
+        ["user", "assistant"].includes(message?.role) &&
+        typeof message.content === "string" &&
+        message.content.length <= 12000,
+    ) &&
+    requestMessages.reduce(
+      (total, message) => total + message.content.length,
+      0,
+    ) <= 32000;
+  if (
+    !validMessages ||
+    !requestMessages.some(
+      (message) => message.role === "user" && message.content === prompt,
+    )
+  ) {
+    throw new Error("Invalid local assistant conversation");
   }
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -55,14 +85,14 @@ export async function requestCompletion(prompt, { signal } = {}) {
         headers,
         body: JSON.stringify({
           model,
-          messages: [{ role: "user", content: prompt }],
+          messages: requestMessages,
         }),
         credentials: "omit",
         cache: "no-store",
         redirect: "error",
         referrerPolicy: "no-referrer",
         signal: controller.signal,
-      }
+      },
     );
     if (!response.ok) throw new Error("Local server request failed");
     const reader = response.body.getReader();

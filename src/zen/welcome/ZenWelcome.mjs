@@ -11,7 +11,7 @@
 
   const { DefaultBrowserHelper } = ChromeUtils.importESModule(
     "chrome://browser/content/preferences/DefaultBrowserHelper.mjs",
-    { global: "current" }
+    { global: "current" },
   );
 
   const kSystemThemePref = "ui.systemUsesDarkTheme";
@@ -92,7 +92,7 @@
     document.getElementById("browser").appendChild(welcome);
     window.MozXULElement.insertFTLIfNeeded("browser/zen-welcome.ftl");
     await document.l10n.translateFragment(
-      document.getElementById("zen-welcome")
+      document.getElementById("zen-welcome"),
     );
   }
 
@@ -201,7 +201,7 @@
       const currentStep = index + 2;
       document.documentElement.setAttribute(
         "zen-welcome-current-step",
-        currentStep
+        currentStep,
       );
       for (const [stepIndex, step] of document
         .getElementById("zen-welcome-stepper")
@@ -230,7 +230,7 @@
         }
         element.setAttribute("exiting", "");
         animate(element, { opacity: [1, 0], ...keyframes }, kExit).then(() =>
-          element.remove()
+          element.remove(),
         );
       }
     }
@@ -266,7 +266,7 @@
           bounce: 0.4,
           visualDuration: 0.3,
           delay: getMotion().stagger(0.03),
-        }
+        },
       );
     }
 
@@ -346,11 +346,11 @@
 
     getEngines() {
       return this._engines.filter(
-        engine =>
+        (engine) =>
           !(
             engine.name.toLowerCase().includes("wikipedia") ||
             engine.name.toLowerCase().includes("ebay")
-          )
+          ),
       );
     }
 
@@ -366,11 +366,11 @@
     }
 
     getEngineByName(aName) {
-      return this._engines.find(engine => engine.name == aName);
+      return this._engines.find((engine) => engine.name == aName);
     }
 
     getEngineById(aId) {
-      return this._engines.find(engine => engine.originalEngine.id === aId);
+      return this._engines.find((engine) => engine.originalEngine.id === aId);
     }
 
     addEngine(engine) {
@@ -403,7 +403,7 @@
     async setDefaultEngine(engine) {
       await lazy.SearchService.setDefault(
         engine.originalEngine,
-        lazy.SearchService.CHANGE_REASON.USER
+        lazy.SearchService.CHANGE_REASON.USER,
       );
     }
   }
@@ -424,7 +424,7 @@
       DefaultBrowserHelper.canCheck &&
       Services.policies.isAllowed("setDefaultBrowser") &&
       !Services.prefs.prefIsLocked(
-        "pref.general.disable_button.default_browser"
+        "pref.general.disable_button.default_browser",
       )
     );
   }
@@ -454,10 +454,10 @@
           const engineOptions = document.createElement("div");
           engineOptions.className = "zen-welcome-search-engines";
           content.appendChild(engineOptions);
-          const appendEngineOption = engine => {
+          const appendEngineOption = (engine) => {
             if (
               engineOptions.querySelector(
-                `#zen-welcome-engine-${CSS.escape(engine.name.replace(/\s+/g, "-"))}`
+                `#zen-welcome-engine-${CSS.escape(engine.name.replace(/\s+/g, "-"))}`,
               )
             ) {
               return;
@@ -480,16 +480,16 @@
             icon.addEventListener(
               "load",
               () => iconWrapper.setAttribute("data-icon-loaded", "true"),
-              { once: true }
+              { once: true },
             );
             icon.addEventListener(
               "error",
               () => iconWrapper.setAttribute("data-icon-unavailable", "true"),
-              { once: true }
+              { once: true },
             );
             engine.originalEngine
               .getIconURL(96)
-              .then(url => {
+              .then((url) => {
                 if (url) {
                   icon.src = url;
                   iconBackdrop.src = url;
@@ -498,7 +498,7 @@
                 }
               })
               .catch(() =>
-                iconWrapper.setAttribute("data-icon-unavailable", "true")
+                iconWrapper.setAttribute("data-icon-unavailable", "true"),
               );
             const option = createOption({
               id: "zen-welcome-engine-" + engine.name.replace(/\s+/g, "-"),
@@ -510,7 +510,7 @@
             option
               .querySelector("input")
               .addEventListener("change", () =>
-                engineStore.setDefaultEngine(engine)
+                engineStore.setDefaultEngine(engine),
               );
             engineOptions.appendChild(option);
           };
@@ -523,7 +523,7 @@
           const description = document.createElement("p");
           document.l10n.setAttributes(
             description,
-            "zen-welcome-searxng-description"
+            "zen-welcome-searxng-description",
           );
           const label = document.createElement("label");
           label.htmlFor = "zen-welcome-searxng-url";
@@ -552,7 +552,7 @@
             } catch {
               document.l10n.setAttributes(
                 statusElement,
-                "zen-welcome-searxng-invalid-url"
+                "zen-welcome-searxng-invalid-url",
               );
               return;
             }
@@ -566,7 +566,7 @@
             ) {
               document.l10n.setAttributes(
                 statusElement,
-                "zen-welcome-searxng-invalid-url"
+                "zen-welcome-searxng-invalid-url",
               );
               return;
             }
@@ -584,7 +584,7 @@
                 statusElement,
                 local
                   ? "zen-welcome-searxng-http-local-confirm"
-                  : "zen-welcome-searxng-http-confirm"
+                  : "zen-welcome-searxng-http-confirm",
               );
               return;
             }
@@ -597,7 +597,7 @@
             descriptor.searchParams.set("autocomplete", "");
             document.l10n.setAttributes(
               statusElement,
-              "zen-welcome-searxng-checking"
+              "zen-welcome-searxng-checking",
             );
             addButton.disabled = true;
             try {
@@ -605,11 +605,11 @@
               await service.init();
               const storedId = Services.prefs.getStringPref(
                 "umbral.search.searxng.engineId",
-                ""
+                "",
               );
               const storedURL = Services.prefs.getStringPref(
                 "umbral.search.searxng.openSearchUrl",
-                ""
+                "",
               );
               let engine;
               if (storedId) {
@@ -622,7 +622,7 @@
                 engine = await service.addOpenSearchEngine(
                   descriptor.href,
                   null,
-                  null
+                  null,
                 );
                 const searchURL = engine.getURLOfType("text/html");
                 let targetURL;
@@ -630,7 +630,7 @@
                   targetURL = searchURL?.template
                     ? new URL(
                         searchURL.template.replaceAll("{searchTerms}", "test"),
-                        descriptor.href
+                        descriptor.href,
                       )
                     : null;
                 } catch {
@@ -643,23 +643,23 @@
                 ) {
                   await service.removeEngine(
                     engine,
-                    service.CHANGE_REASON.USER
+                    service.CHANGE_REASON.USER,
                   );
                   throw new Error("descriptor-invalid");
                 }
                 Services.prefs.setStringPref(
                   "umbral.search.searxng.engineId",
-                  engine.id
+                  engine.id,
                 );
                 Services.prefs.setStringPref(
                   "umbral.search.searxng.openSearchUrl",
-                  descriptor.href
+                  descriptor.href,
                 );
               }
               appendEngineOption(engineStore.addEngine(engine));
               document.l10n.setAttributes(
                 statusElement,
-                "zen-welcome-searxng-added"
+                "zen-welcome-searxng-added",
               );
             } catch (error) {
               console.error("Umbral welcome SearXNG setup failed", error);
@@ -711,7 +711,7 @@
             id: "zen-welcome-set-default-browser",
             l10n: "zen-welcome-set-default-browser",
             primary: true,
-            onclick: pages => {
+            onclick: (pages) => {
               requestDefaultBrowser(pages.content);
               return false;
             },
@@ -720,17 +720,17 @@
         ],
         async prepareButtons(buttons, content) {
           const button = buttons.querySelector(
-            "#zen-welcome-set-default-browser"
+            "#zen-welcome-set-default-browser",
           );
           const statusElement = content.querySelector(
-            "#zen-welcome-default-browser-status"
+            "#zen-welcome-default-browser-status",
           );
           button.setAttribute("aria-describedby", statusElement.id);
           if (!canSetDefaultBrowser()) {
             button.disabled = true;
             document.l10n.setAttributes(
               statusElement,
-              "zen-welcome-default-browser-unavailable"
+              "zen-welcome-default-browser-unavailable",
             );
             await document.l10n.translateElements([statusElement]);
             return;
@@ -740,11 +740,11 @@
               button.disabled = true;
               document.l10n.setAttributes(
                 button,
-                "zen-welcome-default-browser-already"
+                "zen-welcome-default-browser-already",
               );
               document.l10n.setAttributes(
                 statusElement,
-                "zen-welcome-default-browser-current"
+                "zen-welcome-default-browser-current",
               );
               await document.l10n.translateElements([button, statusElement]);
             }
@@ -753,12 +753,46 @@
             button.disabled = true;
             document.l10n.setAttributes(
               statusElement,
-              "zen-welcome-default-browser-error"
+              "zen-welcome-default-browser-error",
             );
             await document.l10n.translateElements([statusElement]);
           }
         },
         render(content) {
+          const aiChoice = document.createElement("section");
+          aiChoice.className = "zen-welcome-ai-choice";
+          const aiTitle = document.createElement("h2");
+          const aiDescription = document.createElement("p");
+          document.l10n.setAttributes(aiTitle, "zen-welcome-ai-title");
+          document.l10n.setAttributes(
+            aiDescription,
+            "zen-welcome-ai-description",
+          );
+          aiChoice.append(aiTitle, aiDescription);
+          const aiEnabled = createOption({
+            id: "zen-welcome-ai-enable",
+            group: "zen-welcome-ai",
+            checked: Services.prefs.getBoolPref("umbral.ai.enabled", false),
+            l10n: "zen-welcome-ai-enable",
+          });
+          const aiNotNow = createOption({
+            id: "zen-welcome-ai-not-now",
+            group: "zen-welcome-ai",
+            checked: !Services.prefs.getBoolPref("umbral.ai.enabled", false),
+            l10n: "zen-welcome-ai-not-now",
+          });
+          aiEnabled
+            .querySelector("input")
+            .addEventListener("change", () =>
+              Services.prefs.setBoolPref("umbral.ai.enabled", true),
+            );
+          aiNotNow
+            .querySelector("input")
+            .addEventListener("change", () =>
+              Services.prefs.setBoolPref("umbral.ai.enabled", false),
+            );
+          aiChoice.append(aiEnabled, aiNotNow);
+          content.appendChild(aiChoice);
           const summary = document.createElement("div");
           summary.className = "zen-welcome-summary";
           for (const [titleId, descriptionId] of [
@@ -794,7 +828,7 @@
   async function requestDefaultBrowser(content) {
     const button = document.getElementById("zen-welcome-set-default-browser");
     const statusElement = content.querySelector(
-      "#zen-welcome-default-browser-status"
+      "#zen-welcome-default-browser-status",
     );
     if (!canSetDefaultBrowser() || button.disabled) {
       return;
@@ -807,33 +841,33 @@
       if (DefaultBrowserHelper.isBrowserDefault) {
         document.l10n.setAttributes(
           button,
-          "zen-welcome-default-browser-already"
+          "zen-welcome-default-browser-already",
         );
         document.l10n.setAttributes(
           statusElement,
-          "zen-welcome-default-browser-current"
+          "zen-welcome-default-browser-current",
         );
       } else {
         button.dataset.checkOnly = "true";
         button.disabled = false;
         document.l10n.setAttributes(
           button,
-          "zen-welcome-default-browser-check"
+          "zen-welcome-default-browser-check",
         );
         document.l10n.setAttributes(
           statusElement,
-          "zen-welcome-default-browser-pending"
+          "zen-welcome-default-browser-pending",
         );
       }
     } catch (error) {
       console.error(
         "Umbral could not request the default browser change",
-        error
+        error,
       );
       button.disabled = false;
       document.l10n.setAttributes(
         statusElement,
-        "zen-welcome-default-browser-error"
+        "zen-welcome-default-browser-error",
       );
     }
     await document.l10n.translateElements([button, statusElement]);
@@ -847,11 +881,11 @@
         await animate(
           "#zen-welcome-start > *",
           { opacity: [1, 0], y: [0, -12] },
-          { duration: 0.2, ease: "easeIn" }
+          { duration: 0.2, ease: "easeIn" },
         );
         new nsZenWelcomePages(getWelcomePages());
       },
-      { once: true }
+      { once: true },
     );
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -862,7 +896,7 @@
     await animate(
       "#zen-welcome-start > *",
       { opacity: [0, 1], y: [18, 0] },
-      { delay: getMotion().stagger(0.08), duration: 0.45, ease: "easeOut" }
+      { delay: getMotion().stagger(0.08), duration: 0.45, ease: "easeOut" },
     );
     button.focus({ preventScroll: true });
   }
@@ -903,11 +937,11 @@
         appWin.rollupAllPopups();
         window.moveTo(
           screen.availLeft + (screen.availWidth - width) / 2,
-          screen.availTop + (screen.availHeight - height) / 2
+          screen.availTop + (screen.availHeight - height) / 2,
         );
         lockWindowSize(width, height);
       },
-      { once: true }
+      { once: true },
     );
   }
 

@@ -21,6 +21,7 @@ class UmbralBrowserChrome {
   #chromePopupOpen = false;
   #customizableUIListener = null;
   #navBarOrigin = null;
+  #welcomeObserver = null;
 
   init() {
     const wrapper = document.getElementById("zen-appcontent-navbar-wrapper");
@@ -164,6 +165,38 @@ class UmbralBrowserChrome {
         "browser-delayed-startup-finished"
       );
     }
+    // During the welcome flow Firefox computes toolbar overflow while the
+    // toolbox is hidden. Recompute once the welcome stage is removed, then
+    // let the native overflow manager settle before routing extension actions.
+    const refreshExtensionPlacement = () => {
+      window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() => {
+          if (window.closed) return;
+          // The welcome completion animation restores the toolbox and window
+          // geometry at the same time. Give those styles a moment to settle.
+          window.setTimeout(() => {
+            if (window.closed) return;
+            window.dispatchEvent(new Event("resize"));
+            window.setTimeout(() => this.place(), 350);
+          }, 350);
+        })
+      );
+    };
+    this.#welcomeObserver = new MutationObserver(() => {
+      if (document.documentElement.hasAttribute("zen-welcome-stage")) {
+        return;
+      }
+      this.#welcomeObserver?.disconnect();
+      this.#welcomeObserver = null;
+      refreshExtensionPlacement();
+    });
+    this.#welcomeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["zen-welcome-stage"],
+    });
+    if (!document.documentElement.hasAttribute("zen-welcome-stage")) {
+      window.setTimeout(refreshExtensionPlacement, 2000);
+    }
     this.#syncPage();
 
     const modeObserver = new MutationObserver(() => this.place());
@@ -177,6 +210,7 @@ class UmbralBrowserChrome {
       "unload",
       () => {
         modeObserver.disconnect();
+        this.#welcomeObserver?.disconnect();
         if (this.#customizableUIListener) {
           gCustomizableUI.removeListener(this.#customizableUIListener);
         }
