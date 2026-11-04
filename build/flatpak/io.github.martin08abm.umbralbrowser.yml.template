@@ -12,7 +12,7 @@ finish-args:
   - --socket=pulseaudio
   - --socket=wayland
   - --socket=fallback-x11
-  - --device=dri
+  - --device=all
   - --filesystem=xdg-download:rw
   - --env=DICPATH=/usr/share/hunspell
   - --talk-name=org.a11y.Bus

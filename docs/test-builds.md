@@ -1,6 +1,6 @@
 # Umbral test builds
 
-This guide describes local Linux packaging and the manually triggered Windows and macOS test-build workflows. They produce temporary test artifacts only; they do not publish a release.
+This guide describes the local Linux test package and the manually triggered Windows test-build workflow. They produce temporary test artifacts only; they do not publish a release. The agreed distribution targets are a source-built Linux Flatpak proposal for Flathub and a Windows x86_64 portable ZIP with manual updates. Neither target currently has a public release download.
 
 The packages are built from the checked-out Umbral sources and work independently of the source repository and `engine/` build directory. The Linux archive still relies on the host system’s supported shared libraries.
 
@@ -95,9 +95,9 @@ Open **Umbral Browser** from the desktop application menu. It launches with `~/.
 
 The executable is named `zen` by the inherited build configuration; its product name and packaged application icon are Umbral.
 
-## Linux x86_64: manual Flatpak bundle
+## Linux x86_64: direct Flatpak test bundle
 
-The Flatpak uses the separate application ID `io.github.martin08abm.umbralbrowser`. Flatpak keeps its writable app data below `~/.var/app/io.github.martin08abm.umbralbrowser`; the launcher also selects a profile under that app’s private data directory. It does not read or reuse Zen or Firefox profiles. The bundle reuses the already-built Linux archive, including Umbral’s homepage, SearXNG setup, ETP settings and statistics, and the original signed uBlock Origin XPI. The archive and bundle can be generated from the same build, so `.tar.xz` remains available as the host-integrated alternative.
+The Flatpak uses the separate application ID `io.github.martin08abm.umbralbrowser`. Flatpak keeps its writable app data below `~/.var/app/io.github.martin08abm.umbralbrowser`; the launcher also selects a profile under that app’s private data directory. It does not read or reuse Zen or Firefox profiles. This local test channel wraps the already-built Linux archive, including Umbral’s homepage, SearXNG setup, ETP settings and statistics, and the original signed uBlock Origin XPI. The archive and bundle can be generated from the same build, so `.tar.xz` remains available as the host-integrated alternative. This is a direct binary-packaging workflow, not a Flathub submission manifest.
 
 Install Flatpak and `flatpak-builder` from your Linux distribution. Configure the Flathub remote and install the SDK, runtime, and Firefox BaseApp used by Zen’s manifest:
 
@@ -135,17 +135,29 @@ flatpak uninstall --user io.github.martin08abm.umbralbrowser
 
 To also erase only Umbral’s private Flatpak data, including its profile, add `--delete-data` to that uninstall command.
 
-The manifest grants network access, audio, Wayland and fallback X11 sockets, DRI for graphics acceleration, and write access to `xdg-download`. It does not grant broad home-directory access. Like [Zen’s manifest](https://github.com/zen-browser/desktop/blob/dev/build/flatpak/app.zen_browser.zen.yml.template), it includes `--allow=devel`; [Flatpak documents](https://docs.flatpak.org/en/latest/flatpak-command-reference.html) that this allows additional syscalls such as `ptrace()` and `perf_event_open()`. That is a security tradeoff, and this build has not shown that the permission is necessary. The Firefox content-process sandbox and whether Umbral can run without this permission still need runtime verification. [Flatpak portals](https://docs.flatpak.org/en/latest/sandbox-permissions.html#portals) are the intended route for file selection and grant access to chosen files; GTK can use them transparently, but the Firefox file picker has not yet been checked on GNOME/KDE portals. Downloads, Wayland/X11 selection, GPU acceleration, audio, and portal file access have not been exercised in this package.
+The manifest grants network access, audio, Wayland and fallback X11 sockets, all device nodes under `/dev`, and write access to `xdg-download`. The device grant is needed for Firefox’s Linux WebAuthn implementation: its [`authenticator-rs` backend](https://github.com/mozilla/authenticator-rs) discovers FIDO authenticators through udev and opens `/dev/hidraw*` nodes ([Mozilla’s Linux dependency note](https://bugzilla.mozilla.org/show_bug.cgi?id=1434277)). Flatpak’s [`--device=usb`](https://docs.flatpak.org/en/latest/flatpak-command-reference.html) exposes only `/dev/bus/usb`, not `/dev/hidraw`; the Flatpak device permission that covers hidraw is `--device=all`. This grants access to every device node under `/dev` (except `/dev/shm`), so it is broader than access to USB bus nodes alone. The user’s udev permissions still apply. A successful build verifies the declared package permission; authentication with a physical security key remains a separate runtime check.
+
+The manifest does not grant broad home-directory access. Like [Zen’s manifest](https://github.com/zen-browser/desktop/blob/dev/build/flatpak/app.zen_browser.zen.yml.template), it includes `--allow=devel`; [Flatpak documents](https://docs.flatpak.org/en/latest/flatpak-command-reference.html) that this allows additional syscalls such as `ptrace()` and `perf_event_open()`. That is a security tradeoff, and this build has not shown that the permission is necessary. The Firefox content-process sandbox and whether Umbral can run without this permission still need runtime verification. [Flatpak portals](https://docs.flatpak.org/en/latest/sandbox-permissions.html#portals) are the intended route for file selection and grant access to chosen files; GTK can use them transparently, but the Firefox file picker has not yet been checked on GNOME/KDE portals. Downloads, Wayland/X11 selection, GPU acceleration, audio, and portal file access have not been exercised in this package.
 
 uBlock Origin remains its original signed extension. The package contains its signed XPI; Firefox AddonManager remains responsible for extension updates and needs network access. Update behavior in Flatpak has not yet been tested. Extensions that rely on a host-side native messaging application, including some password-manager integrations, may not work: the sandbox cannot freely launch or inspect arbitrary host programs. Such integration requires a Flatpak-aware native host and explicit, narrowly scoped permissions; this manifest does not add those permissions.
 
-The package copies the browser distribution and its existing notices unchanged. The project remains MPL-2.0; Mozilla/Firefox and Zen notices remain with their components, and uBlock Origin retains its upstream GPL-3.0-only license and attribution in the signed XPI. Flatpak metadata identifies the app license as MPL-2.0. No runtime compatibility test, package build, or installation has been performed for this new manifest yet.
+The package copies the browser distribution and its existing notices unchanged. The project remains MPL-2.0; Mozilla/Firefox and Zen notices remain with their components, and uBlock Origin retains its upstream GPL-3.0-only license and attribution in the signed XPI. Flatpak metadata identifies the app license as MPL-2.0. Package build and physical-key runtime status are reported separately for each regenerated artifact.
+
+## Flathub source-build proposal: not ready for submission
+
+Flathub’s current requirements say source-available applications must be built from source, all build dependencies must be declared as fetchable sources, and the build runs without network access. Submission PRs must not contain precompiled binaries; new submissions target the stable repository, and the manifest must use the newest hosted runtime. See [Flathub’s requirements](https://docs.flathub.org/docs/for-app-authors/requirements) and [submission checks](https://docs.flathub.org/docs/for-app-authors/submission).
+
+The direct test bundle above takes `dist/zen-*.tar.xz` as its input, so it is not suitable for Flathub. A local source-build proposal is in [`packaging/flathub-proposal/io.github.martin08abm.umbralbrowser.yml`](../packaging/flathub-proposal/io.github.martin08abm.umbralbrowser.yml). It points at the public Umbral source revision and the pinned Firefox 158.0.1 **source archive**, not the generated browser archive or Flatpak bundle. Its runtime/BaseApp are set to 26.08, the newest Flathub runtime branch checked on 2026-11-04; the matching Firefox BaseApp branch exists.
+
+This file is a proposal sketch, not a buildable or submit-ready manifest. The pinned Mozilla source archive URL returned HTTP 200; its SHA-256 is recorded from Surfer’s retained copy, but a Flathub-builder fetch has not been run. The clean Firefox base commit documented in [`engine-source-bases.md`](engine-source-bases.md) exists only in the local `engine/` repository, which has no remote, so the proposal uses the matching upstream source archive instead. Surfer’s existing build flow also downloads toolchains during `bootstrap`, and npm, Rust/Cargo, Python and Mozilla build dependencies have not yet been fully enumerated for Flathub’s offline builder. The persistent project source also contains the AMO-signed uBlock XPI; its treatment must be reconciled with Flathub’s source-only policy before submission. A reproducible offline toolchain/dependency manifest must be completed while keeping `surfer.json` pinned at Firefox 158.0.1.
+
+Before any submission, establish a stable release, build and test the manifest with Flathub’s builder and linter, ensure the manifest is at the repository root, check both Flathub architectures, and review permissions. In particular, `--device=all` is needed for the current Firefox hidraw WebAuthn path but exposes all `/dev` device nodes, and `--allow=devel` is another broad permission to justify or remove. Flathub’s policy also requires a stable submission and a human-managed review; this preparation does not publish or submit anything.
 
 ## Windows x86_64: portable ZIP artifact
 
 1. Open [Actions](https://github.com/Martin08ABM/umbral-browser/actions) in the Umbral repository.
 2. Select **Manual Windows x86_64 test build**, choose **Run workflow**, and provide a test version label if desired.
-3. When it finishes, download the `umbral-windows-x86_64` artifact. GitHub downloads an outer artifact ZIP; extract it once to get `umbral-windows-x86_64.zip`, then extract that portable browser ZIP.
+3. When it finishes, download the `umbral-windows-x86_64` Actions artifact. GitHub downloads an outer artifact ZIP; extract it once to get `umbral-windows-x86_64.zip`, then extract that portable browser ZIP. The artifact is retained for three days and is not a public release.
 4. In PowerShell, from the extracted browser files, create and use a dedicated profile:
 
 ```powershell
@@ -156,36 +168,28 @@ if (-not $browser) { throw 'zen.exe was not found in the extracted package' }
 & $browser.FullName -no-remote -profile $profilePath
 ```
 
-This is a ZIP with no installer. The `-no-remote` flag and explicit profile path keep the test session separate from Firefox and Zen profiles.
+This is a portable ZIP with no installer. The `-no-remote` flag and explicit profile path keep the test session separate from Firefox and Zen profiles. The workflow produces the ZIP from `npm run package`, checks its archive contents, executable architecture and signed uBlock XPI, then uploads it as `umbral-windows-x86_64`.
+
+### Manually update an existing portable installation
+
+There is no automatic updater. To try a newer workflow build while keeping the profile already used by your Umbral shortcut:
+
+1. Close every Umbral window and wait for `zen.exe` to exit in Task Manager.
+2. Run the **Manual Windows x86_64 test build** workflow and download its `umbral-windows-x86_64` artifact before the three-day retention expires.
+3. Extract GitHub’s outer artifact ZIP, then extract the inner `umbral-windows-x86_64.zip` into a temporary folder.
+4. Copy the extracted browser files over the existing Umbral installation folder and allow file overwrites. Do not remove or replace the profile directory. If your shortcut passes `-profile`, keep the same path and arguments; otherwise reopen `zen.exe` the same way you used before.
+
+The workflow creates test artifacts only. There is no public Windows download page or production release to link to yet.
 
 The build is unsigned. Windows may identify it as an unknown publisher or show a SmartScreen warning; Smart App Control can block unsigned executables under some configurations. The workflow does not disable or alter those protections. Windows signing would require an Authenticode signing identity and protected signing credentials.
 
-## macOS Apple Silicon ARM64: DMG artifact
-
-1. Open [Actions](https://github.com/Martin08ABM/umbral-browser/actions) in the Umbral repository.
-2. Select **Manual macOS Apple Silicon test build**, choose **Run workflow**, and provide a test version label if desired.
-3. Download the `umbral-macos-arm64` artifact. Extract GitHub’s outer artifact ZIP to get `umbral-macos-arm64.dmg`.
-4. Open the DMG, copy `Umbral.app` to `/Applications`, then eject the mounted image.
-5. Launch it with a profile dedicated to Umbral:
-
-```sh
-profile_dir="$HOME/Library/Application Support/Umbral/TestProfile"
-mkdir -p "$profile_dir"
-open -na "/Applications/Umbral.app" --args \
-  -no-remote -profile "$profile_dir"
-```
-
-The build targets **Apple Silicon ARM64** and **macOS 11 Big Sur or newer**. Firefox’s build configuration sets the ARM64 macOS deployment target to 11.0.
-
-This test artifact is not signed with an Apple Developer ID and is not notarized. Gatekeeper may prevent its first launch. On macOS Sequoia and later, Control-click is not the override path; after attempting to open the app, review it under **System Settings → Privacy & Security → Open Anyway**. This is a per-app approval, and managed Macs may disallow it. The workflow does not turn Gatekeeper off. Signed and notarized distribution would require a Developer ID certificate, protected credentials, and a notarization step.
-
 ## What the workflows build
 
-Both workflows follow the existing Zen release-build setup and run on Ubuntu. Windows obtains Wine and a Visual Studio 2026 sysroot with the Windows SDK through Mozilla’s `get_vs.py`, bootstraps Clang, installs the pinned Rust MSVC target and downloads the Windows API bindings version named by the source tree. The workflow checks those paths before compiling. macOS obtains `cctools`, DMG and HFS+ tools, installs Rust’s Apple Silicon target, and uses Firefox’s macOS SDK bootstrap; the configured SDK is checked after compilation. Mozilla documents that the build system bootstraps a suitable macOS SDK by default. [Firefox macOS SDK notes](https://github.com/mozilla-firefox/firefox/blob/main/widget/cocoa/docs/sdks.md)
+The Windows workflow follows the existing Zen release-build setup and runs on Ubuntu. It obtains Wine and a Visual Studio 2026 sysroot with the Windows SDK through Mozilla’s `get_vs.py`, bootstraps Clang, installs the pinned Rust MSVC target and downloads the Windows API bindings version named by the source tree. The workflow checks those paths before compiling.
 
-The macOS workflow cross-compiles an ARM64 `.app` and packages it in a DMG. Both cross-build workflows validate the archive, required browser bundle, included signed uBlock XPI and executable architecture before upload. The DMG has not been opened on a physical Apple Silicon Mac yet; your friend’s test is the first target-Mac runtime check.
+The Windows workflow validates the portable ZIP, required browser bundle, included signed uBlock XPI and executable architecture before upload.
 
-The imported Umbral sources include the homepage, search configuration and SearXNG setup, Firefox ETP settings and ETP statistics service, and the original signed uBlock Origin XPI. New profiles default Firefox Accounts off and hide its account entry points. Windows `.ico`/Start tiles and macOS `.icns` are supplied by the persistent Umbral platform-icon patch. The Linux launcher uses the Umbral icon from the packaged browser.
+The imported Umbral sources include the homepage, search configuration and SearXNG setup, Firefox ETP settings and ETP statistics service, and the original signed uBlock Origin XPI. New profiles default Firefox Accounts off and hide its account entry points. Windows `.ico`/Start tiles are supplied by the persistent Umbral platform-icon patch. The Linux launcher uses the Umbral icon from the packaged browser.
 
 ## Runner resources and artifact lifetime
 

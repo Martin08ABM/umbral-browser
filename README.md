@@ -27,7 +27,7 @@ Umbral is an independent browser project. It brings a quieter, compact interface
 
 ## Development status
 
-Umbral is in active development. Linux is the platform currently built and functionally tested. Windows and macOS on Apple Silicon are prepared as manual test-build workflows, but those packages have not yet been built or tested on their target systems. There are no public releases or download packages; see [Test builds](docs/test-builds.md) to run the workflows yourself.
+Umbral is in active development. Linux has a local Flatpak test-package workflow; its source-built Flathub proposal is not ready. Windows x86_64 has a manually triggered portable ZIP test workflow with manual file replacement and no automatic updater. These are test artifacts, not public releases or download packages; see [Test builds](docs/test-builds.md) for the current steps and limits.
 
 ## Build from source
 
