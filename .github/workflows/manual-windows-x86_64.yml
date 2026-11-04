@@ -111,8 +111,25 @@ jobs:
         run: |
           set -euxo pipefail
           chmod -R +x "$HOME/win-cross/vs2026" || true
-          npm run bootstrap
+
+          # The imported Firefox source has no Gecko Git history. `mach bootstrap`
+          # generates its Taskcluster toolchain graph locally and fails while
+          # asking Git for a commit on the empty `umbral_browser` branch. Resolve
+          # the pinned Firefox 158 Clang 22 toolchain index directly, then use
+          # mach's supported --from-task installer (including CoT validation).
+          clang_index='gecko.cache.level-3.toolchains.v3.linux64-clang-22.hash.ca0203e14145d09b493d0ab22aef8ccb843db30b91f0e5de9b8f66c8822cd749'
+          clang_task_id="$(curl --retry 4 --retry-all-errors -fsSL \
+            "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/$clang_index" \
+            | jq -er '.taskId')"
+          mkdir -p "$HOME/.mozbuild"
+          cd "$HOME/.mozbuild"
+          python "$GITHUB_WORKSPACE/engine/mach" artifact toolchain \
+            --retry 4 \
+            --from-task "$clang_task_id:public/build/clang.tar.zst"
+          cd "$GITHUB_WORKSPACE"
+
           test -x "$HOME/.mozbuild/clang/bin/clang-cl"
+          "$HOME/.mozbuild/clang/bin/clang" --version | grep -F 'clang version 22.'
           clang_lib="$(find "$HOME/.mozbuild/clang/lib/clang" -path '*/lib/windows' -type d -print -quit)"
           test -n "$clang_lib"
           printf '\nexport LIB="%s"\n' "$clang_lib" >> configs/common/mozconfig
