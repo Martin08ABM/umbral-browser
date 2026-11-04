@@ -26,6 +26,7 @@ community include:
 - Demonstrating empathy and kindness toward other people
 - Being respectful of differing opinions, viewpoints, and experiences
 - Giving and gracefully accepting constructive feedback
+- Criticizing ideas and changes without attacking the people behind them
 - Accepting responsibility and apologizing to those affected by our mistakes,
   and learning from the experience
 - Focusing on what is best not just for us as individuals, but for the
@@ -36,9 +37,12 @@ Examples of unacceptable behavior include:
 - The use of sexualized language or imagery, and sexual attention or
   advances of any kind
 - Trolling, insulting or derogatory comments, and personal or political attacks
+- Discriminatory or hateful conduct, threats, intimidation, or repeated unwanted
+  contact
 - Public or private harassment
-- Publishing others' private information, such as a physical or email
-  address, without their explicit permission
+- Publishing or threatening to publish another person's private information,
+  including identifying or location information, without their permission
+- Retaliating against someone for raising a concern or participating in a review
 - Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
@@ -52,25 +56,51 @@ or harmful.
 Community leaders have the right and responsibility to remove, edit, or reject
 comments, commits, code, wiki edits, issues, and other contributions that are
 not aligned to this Code of Conduct, and will communicate reasons for moderation
-decisions when appropriate.
+decisions when appropriate and safe to do so. They should apply the rules
+consistently, consider context and impact, and avoid handling a report where
+they have a conflict of interest. Retaliation against reporters, witnesses, or
+people involved in a review is not acceptable.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when
-an individual is officially representing the community in public spaces.
-Examples of representing our community include using an official e-mail address,
-posting via an official social media account, or acting as an appointed
-representative at an online or offline event.
+This Code of Conduct applies within the Umbral project repository and any space
+operated by the project. It also applies when someone is acting as an appointed
+project representative in public.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-hello@zen-browser.app.
-All complaints will be reviewed and investigated promptly and fairly.
+### Reporting a concern
 
-All community leaders are obligated to respect the privacy and security of the
-reporter of any incident.
+For a concern that does not contain sensitive or personal information, open an
+issue in the [Umbral repository issue tracker][issues]. Include links to the
+relevant public discussion, approximate dates, what happened, and what outcome
+you are requesting. Share only details needed to understand the concern; do not
+post someone else's private information.
+
+**Decision required before publication:** The repository does not currently
+document a confidential channel for Code of Conduct reports. Maintainers must
+choose and document a monitored private reporting route before publishing this
+Code. Do not put sensitive allegations, private evidence, or personal details
+in a public issue. The public issue tracker is not a confidential channel.
+
+If a report concerns a maintainer, identify that conflict in the report so an
+uninvolved maintainer can review it where one is available. A maintainer who is
+the subject of a report should not decide its outcome.
+
+### How reports are handled
+
+Maintainers will acknowledge and review reports as soon as reasonably possible.
+They may ask for relevant follow-up, review available evidence, and hear from
+the people involved before deciding what action is appropriate. They will limit
+sharing of report details to those who need them, explain the decision and any
+next steps when practical, and avoid exposing a reporter or other participant
+in a public response. No specific response time is guaranteed.
+
+Outcomes may include a request to stop or correct behavior, a warning, a
+temporary restriction, or a permanent ban from project spaces. The response
+will reflect the conduct, its impact, and any relevant history. Maintainers may
+remove or restrict harmful content while a report is reviewed. A person may ask
+for another maintainer to review a decision where one is available.
 
 ## Enforcement Guidelines
 
@@ -82,9 +112,9 @@ the consequences for any action they deem in violation of this Code of Conduct:
 **Community Impact**: Use of inappropriate language or other behavior deemed
 unprofessional or unwelcome in the community.
 
-**Consequence**: A private, written warning from community leaders, providing
-clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
+**Consequence**: A warning or request to correct the behavior, with an
+explanation of what standard was not met and why. Any requested remedy should
+be proportionate and should not require a public apology.
 
 ### 2. Warning
 
@@ -103,10 +133,10 @@ permanent ban.
 **Community Impact**: A serious violation of community standards, including
 sustained inappropriate behavior.
 
-**Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
-with those enforcing the Code of Conduct, is allowed during this period.
+**Consequence**: A temporary restriction from participation in project spaces
+for a specified period. The restriction may also prohibit contacting people
+involved in the incident, including unsolicited contact with those enforcing
+this Code.
 Violating these terms may lead to a permanent ban.
 
 ### 4. Permanent Ban
@@ -115,8 +145,7 @@ Violating these terms may lead to a permanent ban.
 standards, including sustained inappropriate behavior, harassment of an
 individual, or aggression toward or disparagement of classes of individuals.
 
-**Consequence**: A permanent ban from any sort of public interaction within
-the community.
+**Consequence**: A permanent ban from participation in project spaces.
 
 ## Attribution
 
@@ -128,6 +157,7 @@ Community Impact Guidelines were inspired by [Mozilla's code of conduct
 enforcement ladder](https://github.com/mozilla/diversity).
 
 [homepage]: https://www.contributor-covenant.org
+[issues]: https://github.com/Martin08ABM/umbral-browser/issues/new/choose
 
 For answers to common questions about this code of conduct, see the FAQ at
 https://www.contributor-covenant.org/faq. Translations are available at
