@@ -214,3 +214,13 @@ jobs:
           path: umbral-windows-x86_64.zip
           if-no-files-found: error
           retention-days: 3
+
+
+     - name: Provide source metadata for Windows build
+       shell: bash
+       run: |
+         git -C engine init -b umbral_browser
+         git -C engine config user.name "Umbral CI"
+         git -C engine config user.email "umbral-ci@users.noreply.github.com"
+         git -C engine add config/milestone.txt
+         git -C engine commit -m "Provide Firefox build metadata"
